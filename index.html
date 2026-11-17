@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班級成果展</title>
+<meta name="description" content="Claude 自製作品・班級成果展：不用寫程式，只要說清楚需求，每個人都能做出自己的互動工具！">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@900&family=Huninn&family=LXGW+WenKai+TC:wght@400;700&family=DotGothic16&family=Press+Start+2P&family=Chakra+Petch:wght@600;700&family=Barlow+Condensed:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+/* ================= 頁面基本設定 ================= */
+:root{
+  --page:#f6f2ea; --page-dot:rgba(29,27,24,.07); --ink:#1d1b18; --ink-soft:#5c574f;
+  --chip:#ffffff; --chip-ink:#1d1b18; --chip-line:#e2dccf; --chip-on:#1d1b18; --chip-on-ink:#ffffff;
+  --bar:rgba(246,242,234,.86); --mark:#ffd84d;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --round:"Huninn","Noto Sans TC",sans-serif;
+  --kai:"LXGW WenKai TC","Noto Sans TC",serif;
+  --serif:"Noto Serif TC","Noto Sans TC",serif;
+  --pixel:"DotGothic16","Noto Sans TC",monospace;
+  --tech:"Chakra Petch","Noto Sans TC",sans-serif;
+  --cond:"Barlow Condensed","Noto Sans TC",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#131316; --page-dot:rgba(255,255,255,.06); --ink:#eeece6; --ink-soft:#a8a49b;
+    --chip:#1f1f24; --chip-ink:#eeece6; --chip-line:#34343c; --chip-on:#eeece6; --chip-on-ink:#131316;
+    --bar:rgba(19,19,22,.86); --mark:#8a6d00; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#131316; --page-dot:rgba(255,255,255,.06); --ink:#eeece6; --ink-soft:#a8a49b;
+  --chip:#1f1f24; --chip-ink:#eeece6; --chip-line:#34343c; --chip-on:#eeece6; --chip-on-ink:#131316;
+  --bar:rgba(19,19,22,.86); --mark:#8a6d00; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; font-family:var(--sans); color:var(--ink); line-height:1.6;
+  background:radial-gradient(var(--page-dot) 1.2px,transparent 1.6px) 0 0/22px 22px,var(--page);
+  overflow-x:hidden;
+}
+a{color:inherit}
+
+/* ================= 頂部標題區 ================= */
+.hero{position:relative;padding:72px 16px 48px;text-align:center;overflow:hidden}
+.hero-inner{position:relative;z-index:1;max-width:880px;margin:0 auto}
+.kicker{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
+  background:var(--chip);border:1px solid var(--chip-line);font-size:14px;font-weight:700;color:var(--ink-soft)}
+.kicker b{color:var(--ink)}
+.hero h1{margin:18px 0 0;font-weight:900;font-size:clamp(34px,7vw,68px);line-height:1.15;letter-spacing:.01em;text-wrap:balance}
+.hero h1 .mark{background:linear-gradient(transparent 62%,var(--mark) 62% 92%,transparent 92%);padding:0 .08em}
+.hero h1 .dot{color:#e8452c}
+.hero h1 .nw{white-space:nowrap}
+.hero p.sub{margin:18px auto 0;max-width:640px;font-size:clamp(16px,2.4vw,20px);color:var(--ink-soft);font-weight:500;text-wrap:balance}
+.stats{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:26px}
+.stat{padding:8px 16px;border-radius:14px;background:var(--chip);border:1px solid var(--chip-line);font-weight:700;font-size:15px}
+.stat strong{font-size:20px;margin-right:2px}
+.floaters span{position:absolute;font-size:clamp(28px,4vw,46px);opacity:.9;animation:floaty 5s ease-in-out infinite;user-select:none}
+.floaters span:nth-child(1){left:6%;top:18%;animation-delay:0s}
+.floaters span:nth-child(2){left:12%;bottom:12%;animation-delay:-1.2s}
+.floaters span:nth-child(3){right:7%;top:16%;animation-delay:-2.4s}
+.floaters span:nth-child(4){right:13%;bottom:10%;animation-delay:-3.1s}
+.floaters span:nth-child(5){left:24%;top:6%;animation-delay:-.7s;font-size:26px}
+.floaters span:nth-child(6){right:25%;top:5%;animation-delay:-1.9s;font-size:26px}
+
+/* ================= 分類篩選列 ================= */
+.filters{position:sticky;top:0;z-index:20;background:var(--bar);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--chip-line)}
+.filters-inner{max-width:1240px;margin:0 auto;padding:12px 16px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.filters-inner::-webkit-scrollbar{display:none}
+.chip{flex:none;font:700 15px var(--sans);padding:8px 16px;border-radius:999px;cursor:pointer;
+  background:var(--chip);color:var(--chip-ink);border:1px solid var(--chip-line);transition:transform .15s,background .2s}
+.chip:hover{transform:translateY(-2px)}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+.chip small{opacity:.6;margin-left:4px;font-weight:500}
+
+/* ================= 卡片牆 ================= */
+main{max-width:1240px;margin:0 auto;padding:36px 16px 64px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:28px 24px}
+.card{
+  position:relative;isolation:isolate;overflow:hidden;
+  display:flex;flex-direction:column;gap:12px;min-height:310px;padding:24px;
+  border-radius:18px;font-family:var(--sans);
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,border-color .35s;
+  animation:enter .6s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:var(--d,0s);
+}
+.card::before,.card::after{content:"";position:absolute;pointer-events:none;z-index:0}
+.card>*{position:relative;z-index:1}
+.card .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card .icon{font-size:42px;line-height:1;display:inline-block;transition:transform .4s}
+.card .tag{font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:999px;white-space:nowrap}
+.card h3{margin:4px 0 0;font-size:23px;line-height:1.3;font-weight:900}
+.card p{margin:0;font-size:15.5px;line-height:1.75;flex:1}
+.card .btn{
+  align-self:flex-start;display:inline-flex;align-items:center;gap:8px;margin-top:6px;
+  padding:11px 22px;font:800 16px var(--sans);text-decoration:none;border-radius:999px;
+  transition:transform .2s,box-shadow .2s,filter .2s,background .2s,color .2s;
+}
+.card .btn .arr{transition:transform .2s}
+.card .btn:hover .arr{transform:translateX(4px)}
+.card .btn:focus-visible{outline:3px solid #2f8fe0;outline-offset:3px}
+.card audio{width:100%;height:40px;border-radius:999px}
+.empty{grid-column:1/-1;text-align:center;color:var(--ink-soft);padding:40px 0}
+
+/* ================= 共用動畫 ================= */
+@keyframes enter{from{opacity:0;translate:0 26px}to{opacity:1;translate:0 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}35%{transform:translateY(-14px)}60%{transform:translateY(-3px)}}
+@keyframes shake{0%,100%{transform:translate(-2px,-2px)}20%{transform:translate(-6px,-2px) rotate(-1deg)}40%{transform:translate(2px,-2px) rotate(1deg)}60%{transform:translate(-5px,-2px)}80%{transform:translate(1px,-2px)}}
+@keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes flicker{0%,100%{opacity:1}42%{opacity:.9}46%{opacity:.35}50%{opacity:1}53%{opacity:.5}56%{opacity:1}}
+@keyframes sway{0%,100%{transform:translateY(-6px) rotate(-.8deg)}50%{transform:translateY(-6px) rotate(.8deg)}}
+@keyframes swing{0%,100%{transform:rotate(0)}30%{transform:rotate(18deg)}70%{transform:rotate(-14deg)}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.3)}70%{transform:scale(.92)}100%{transform:scale(1.1)}}
+@keyframes eq{0%,100%{transform:scaleY(.35)}30%{transform:scaleY(1)}60%{transform:scaleY(.6)}}
+@keyframes shine{from{transform:translateX(-160%) skewX(-20deg)}to{transform:translateX(360%) skewX(-20deg)}}
+@keyframes slide{to{background-position:120px 0}}
+@keyframes rise{to{background-position:0 -40px}}
+@keyframes blink{50%{opacity:0}}
+@keyframes zoom{from{transform:translateX(0)}to{transform:translateX(-40px)}}
+
+/* =========================================================
+   每張卡片的專屬風格（class 名稱對應下方 WORKS 的 theme）
+   ========================================================= */
+
+/* 1 戰鬥陀螺：熱血競技場風 */
+.t-beyblade{background:radial-gradient(circle at 88% 8%,rgba(232,69,44,.5),transparent 45%),linear-gradient(160deg,#22242b,#14151a);color:#ececec;font-family:var(--tech);border:2px solid #3a3d46;border-radius:6px}
+.t-beyblade::after{right:-55px;bottom:-55px;width:180px;height:180px;border-radius:50%;border:16px dashed rgba(255,165,60,.22);transition:transform 1.2s}
+.t-beyblade .tag{background:#e8452c;color:#fff;border-radius:3px}
+.t-beyblade h3{color:#fff}
+.t-beyblade p{color:#c9cad0}
+.t-beyblade .btn{background:linear-gradient(90deg,#e8452c,#ffa53c);color:#fff;border-radius:2px;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);padding-inline:28px}
+.t-beyblade:hover{transform:translateY(-6px);border-color:#e8452c;box-shadow:0 18px 40px rgba(232,69,44,.35)}
+.t-beyblade:hover .icon{animation:spin .5s linear infinite}
+.t-beyblade:hover::after{transform:rotate(360deg)}
+
+/* 2 排球：運動熱血風 */
+.t-volley{background:linear-gradient(90deg,#e8590c 50%,#1971c2 50%) top/100% 8px no-repeat,repeating-linear-gradient(90deg,transparent 0 13px,rgba(255,255,255,.05) 13px 14px),repeating-linear-gradient(0deg,transparent 0 13px,rgba(255,255,255,.05) 13px 14px),#222831;color:#eee;border-radius:20px}
+.t-volley::after{content:"VS";right:14px;bottom:4px;font:italic 700 84px/1 var(--cond);color:rgba(255,255,255,.07)}
+.t-volley .tag{background:#ffd43b;color:#222}
+.t-volley h3{color:#fff}
+.t-volley h3::first-letter{color:#ff8a3d}
+.t-volley p{color:#ced4da}
+.t-volley .btn{background:#ffd43b;color:#222;box-shadow:0 4px 0 #c79a00}
+.t-volley .btn:hover{transform:translateY(2px);box-shadow:0 2px 0 #c79a00}
+.t-volley:hover{transform:translateY(-8px);box-shadow:-8px 14px 30px rgba(232,89,12,.3),8px 14px 30px rgba(25,113,194,.3)}
+.t-volley:hover .icon{animation:bounce .7s ease infinite}
+
+/* 3 街頭對打：復古街機風 */
+.t-street{background:#0e141b;color:#e8eef5;border:4px solid #ffd23f;border-radius:8px;box-shadow:6px 6px 0 #ff6b70}
+.t-street::before{inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 3px)}
+.t-street::after{content:"INSERT COIN";right:16px;bottom:18px;font:9px "Press Start 2P",monospace;color:#ffd23f;opacity:.5}
+.t-street .tag{background:transparent;border:2px solid #5aa6f0;color:#5aa6f0;border-radius:0}
+.t-street h3{color:#ffd23f;text-shadow:3px 3px 0 #ff6b70}
+.t-street p{color:#b9c4d1}
+.t-street .btn{background:#ff6b70;color:#fff;box-shadow:0 5px 0 #a8343a,0 0 0 3px #0e141b,0 0 0 5px #ffd23f}
+.t-street .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #a8343a,0 0 0 3px #0e141b,0 0 0 5px #ffd23f}
+.t-street:hover{animation:shake .35s;transform:translate(-2px,-2px);box-shadow:10px 10px 0 #5aa6f0}
+.t-street:hover::after{opacity:1;animation:blink .8s steps(1) infinite}
+
+/* 4 哥吉拉：怪獸特攝電影風 */
+.t-godzilla{background:linear-gradient(transparent 55%,rgba(255,74,160,.18)),#10151c;color:#e8eef5;border:1px solid #25303d;border-radius:14px;padding-bottom:62px}
+.t-godzilla::after{left:0;right:0;bottom:0;height:56px;background:#1c2530;clip-path:polygon(0 100%,0 55%,8% 55%,8% 30%,15% 30%,15% 60%,22% 60%,22% 15%,28% 15%,28% 45%,36% 45%,36% 25%,44% 25%,44% 65%,52% 65%,52% 5%,57% 5%,57% 40%,66% 40%,66% 20%,74% 20%,74% 55%,82% 55%,82% 30%,90% 30%,90% 50%,100% 50%,100% 100%)}
+.t-godzilla .tag{background:rgba(255,74,160,.14);color:#ff7dbb;border:1px solid #ff4aa0}
+.t-godzilla h3{color:#7af4ff;text-shadow:0 0 14px rgba(122,244,255,.6)}
+.t-godzilla p{color:#b8c3cf}
+.t-godzilla .btn{background:transparent;color:#7af4ff;border:2px solid #7af4ff}
+.t-godzilla .btn:hover{background:#7af4ff;color:#10151c;box-shadow:0 0 22px rgba(122,244,255,.7)}
+.t-godzilla:hover{transform:translateY(-6px);box-shadow:0 0 0 1px #ff4aa0,0 0 34px rgba(255,74,160,.45)}
+.t-godzilla:hover h3{animation:flicker 1.4s infinite}
+.t-godzilla:hover .icon{animation:wobble .5s ease infinite}
+
+/* 5 小狗快跑：可愛童趣風 */
+.t-dog{background:radial-gradient(2px 2px at 18% 28%,#fff,transparent),radial-gradient(1.5px 1.5px at 72% 18%,#fff,transparent),radial-gradient(2px 2px at 86% 52%,#d6fff8,transparent),radial-gradient(1.5px 1.5px at 42% 76%,#fff,transparent),radial-gradient(1.5px 1.5px at 60% 40%,#fff,transparent),linear-gradient(180deg,#121a3a,#263f5c);color:#e8edf6;font-family:var(--round);border-radius:28px;border:3px solid #4fd1c5}
+.t-dog::after{content:"🐾";right:16px;bottom:12px;font-size:58px;opacity:.18;transform:rotate(-20deg);transition:transform .5s}
+.t-dog .tag{background:#4fd1c5;color:#0a1d1b}
+.t-dog h3{color:#fff;font-weight:400}
+.t-dog p{color:#c8d1e2}
+.t-dog .btn{background:#4fd1c5;color:#0a1d1b;font-family:var(--round);font-weight:400;box-shadow:0 4px 0 #2a8f86}
+.t-dog .btn:hover{transform:translateY(2px);box-shadow:0 2px 0 #2a8f86}
+.t-dog:hover{transform:translateY(-8px) rotate(-1deg);box-shadow:0 16px 34px rgba(79,209,197,.3)}
+.t-dog:hover .icon{animation:bounce .55s ease infinite}
+.t-dog:hover::after{transform:rotate(10deg) scale(1.15)}
+
+/* 6 偷一顆蛋：像素沙漠冒險風 */
+.t-egg{background:radial-gradient(circle at 85% 18%,#fff6df 0 30px,transparent 31px),radial-gradient(ellipse 70% 40% at 20% 110%,#f2c08f 0 98%,transparent 100%),linear-gradient(180deg,#ffd23f,#ff7a1a);color:#231c0a;border-radius:0;box-shadow:0 0 0 4px #3b2a14,8px 8px 0 4px #3b2a14;margin:4px 8px 8px 4px;transition:transform .3s steps(3),box-shadow .3s steps(3)}
+.t-egg .tag{background:#231c0a;color:#ffd23f;border-radius:0}
+.t-egg h3{font-family:var(--pixel);font-weight:400;font-size:25px}
+.t-egg p{color:#3b2a14;font-weight:500}
+.t-egg .btn{background:#d9341f;color:#fff6df;border-radius:0;box-shadow:4px 4px 0 #3b2a14}
+.t-egg .btn:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 #3b2a14}
+.t-egg:hover{transform:translate(-4px,-4px);box-shadow:0 0 0 4px #3b2a14,12px 12px 0 4px #3b2a14}
+.t-egg:hover .icon{animation:wobble .3s ease-in-out infinite}
+
+/* 7 夜市射氣球：台灣夜市燈籠風 */
+.t-night{background:radial-gradient(ellipse at 50% 0%,rgba(255,184,74,.28),transparent 62%),#0d1a1d;color:#fff3dc;border-radius:16px;border:1px solid #28474b;padding-top:40px}
+.t-night::before{top:0;left:0;right:0;height:28px;background:radial-gradient(circle at 12px 16px,#ff5a4a 0 7px,transparent 8px) 0 0/48px 28px repeat-x,radial-gradient(circle at 36px 16px,#ffc83d 0 7px,transparent 8px) 0 0/48px 28px repeat-x,linear-gradient(#9fb7b5,#9fb7b5) 0 8px/100% 1px no-repeat;filter:drop-shadow(0 0 6px rgba(255,200,61,.7))}
+.t-night .tag{background:#ff5a4a;color:#fff}
+.t-night h3{color:#ffc83d;font-family:var(--serif);text-shadow:0 0 16px rgba(255,200,61,.5)}
+.t-night p{color:#e3d6bf}
+.t-night .btn{background:#ff5a4a;color:#fff}
+.t-night .btn:hover{box-shadow:0 0 22px rgba(255,90,74,.75)}
+.t-night:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(255,184,74,.25)}
+.t-night:hover::before{animation:flicker 1.2s infinite}
+.t-night:hover .icon{animation:floaty 1.2s ease-in-out infinite}
+
+/* 8 台北車站：捷運站牌戰術風 */
+.t-taipei{background:#fff;color:#0d1117;border-radius:12px;border:1px solid #d5dbe2;padding-top:36px;box-shadow:0 6px 18px rgba(13,17,23,.08)}
+.t-taipei::before{top:0;left:0;right:0;height:12px;background:linear-gradient(90deg,#e3002c 0 46%,#ffd24d 46% 48%,#e3002c 48% 96%,#ffd24d 96% 98%,#e3002c 98%) 0 0/120px 100% repeat-x}
+.t-taipei::after{content:"R10";right:18px;bottom:20px;width:50px;height:50px;border-radius:50%;background:#e3002c;color:#fff;font:900 16px/50px var(--sans);text-align:center;box-shadow:0 0 0 4px #fff,0 0 0 6px #e3002c}
+.t-taipei .tag{background:#0a7ad6;color:#fff;border-radius:4px}
+.t-taipei p{color:#3b4652}
+.t-taipei .btn{background:#e3002c;color:#fff;border-radius:6px}
+.t-taipei .btn:hover{background:#b80024}
+.t-taipei:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(227,0,44,.18)}
+.t-taipei:hover::before{animation:slide .8s linear infinite}
+.t-taipei:hover .icon{animation:zoom .5s ease-in-out infinite alternate}
+
+/* 9 巷戰突擊：暗夜軍事科技風 */
+.t-alley{background:#171b1e;color:#e8e4da;font-family:var(--tech);border-radius:4px;border:1px solid #2a3136;padding-top:38px}
+.t-alley::before{top:0;left:0;right:0;height:12px;background:repeating-linear-gradient(-45deg,#ffb020 0 10px,#101315 10px 20px)}
+.t-alley::after{right:16px;bottom:16px;width:72px;height:72px;border-radius:50%;border:2px solid rgba(74,210,192,.4);background:linear-gradient(rgba(74,210,192,.4),rgba(74,210,192,.4)) center/2px 100% no-repeat,linear-gradient(rgba(74,210,192,.4),rgba(74,210,192,.4)) center/100% 2px no-repeat;transition:transform .5s,border-color .3s}
+.t-alley .tag{background:transparent;color:#ffb020;border:1px solid #ffb020;border-radius:2px}
+.t-alley h3{color:#fff;letter-spacing:.04em}
+.t-alley p{color:#a9b1b6}
+.t-alley .btn{background:#ffb020;color:#1a1205;border-radius:2px;font-family:var(--tech)}
+.t-alley .btn:hover{background:#4ad2c0}
+.t-alley:hover{transform:translateY(-6px);border-color:#4ad2c0;box-shadow:0 0 0 1px #4ad2c0,0 16px 36px rgba(0,0,0,.45)}
+.t-alley:hover::after{transform:rotate(90deg) scale(1.1);border-color:#e5484d}
+
+/* 10 屋頂狂奔：都會跑酷動感風 */
+.t-roof{background:linear-gradient(180deg,#7fb8ee,#cfeaff 70%,#e6f3fb);color:#14111f;border-radius:14px;padding-bottom:58px}
+.t-roof::before{right:0;top:22%;width:55%;height:42%;background:repeating-linear-gradient(180deg,transparent 0 14px,rgba(255,255,255,.75) 14px 16px);-webkit-mask:linear-gradient(90deg,transparent,#000);mask:linear-gradient(90deg,transparent,#000)}
+.t-roof::after{left:0;right:0;bottom:0;height:40px;background:#3f86d6;clip-path:polygon(0 100%,0 30%,22% 30%,22% 55%,30% 55%,30% 10%,52% 10%,52% 45%,60% 45%,60% 25%,82% 25%,82% 60%,88% 60%,88% 20%,100% 20%,100% 100%)}
+.t-roof .tag{background:#14111f;color:#ffd23f}
+.t-roof h3{font-family:var(--cond);font-style:italic;font-size:27px}
+.t-roof p{color:#2c2a3a}
+.t-roof .btn{background:#ff6a2b;color:#fff;border-radius:6px;transform:skewX(-10deg)}
+.t-roof .btn:hover{transform:skewX(-10deg) translateX(4px);box-shadow:-6px 0 0 #ffd23f}
+.t-roof:hover{transform:translate(4px,-6px) skewX(-1.5deg);box-shadow:-10px 16px 30px rgba(63,134,214,.35)}
+.t-roof:hover::before{animation:rise .4s linear infinite;background-size:100% 40px}
+
+/* 11 方塊大陸：像素方塊風 */
+.t-block{background:linear-gradient(#79d14e 0 20px,#4e8f2e 20px 26px,transparent 26px),repeating-conic-gradient(#5b4128 0 25%,#4f3822 0 50%) 0 26px/16px 16px;color:#fff;border-radius:0;font-family:var(--pixel);border:4px solid #05070a;padding-top:44px;transition:transform .3s steps(4),box-shadow .3s steps(4)}
+.t-block .tag{background:#05070a;color:#79d14e;border-radius:0;font-weight:400}
+.t-block h3{font-weight:400;font-size:26px;text-shadow:3px 3px 0 #000}
+.t-block p{font-family:var(--sans);text-shadow:1px 1px 0 #000;color:#f1e6d6}
+.t-block .btn{background:#8b96a6;color:#05070a;border-radius:0;border:3px solid #05070a;box-shadow:inset -4px -4px 0 #394456,inset 4px 4px 0 #cfd8e3;font-family:var(--pixel);font-weight:400}
+.t-block .btn:hover{background:#ff9440;box-shadow:inset -4px -4px 0 #a8551a,inset 4px 4px 0 #ffc89a}
+.t-block:hover{transform:translateY(-8px);box-shadow:8px 8px 0 #05070a}
+.t-block:hover .icon{animation:wobble .4s steps(3) infinite}
+
+/* 12 森林馴獸師：自然森林風 */
+.t-forest{background:radial-gradient(circle at 100% 0,#cfe8b0 0 90px,transparent 91px),#eaf6dc;color:#1f3d1a;border-radius:34px 8px 34px 8px;border:2px solid #7cb342}
+.t-forest::after{content:"🌿";right:10px;bottom:4px;font-size:70px;opacity:.3;transform-origin:bottom center;transition:transform .6s}
+.t-forest .tag{background:#7cb342;color:#fff}
+.t-forest h3{color:#2c4527}
+.t-forest p{color:#3d5537}
+.t-forest .btn{background:#7a4e26;color:#fff;border-radius:12px;box-shadow:0 4px 0 #4e2f14}
+.t-forest .btn:hover{transform:translateY(2px);box-shadow:0 2px 0 #4e2f14}
+.t-forest:hover{animation:sway 1.6s ease-in-out infinite;box-shadow:0 16px 30px rgba(124,179,66,.3)}
+.t-forest:hover::after{transform:rotate(-12deg) scale(1.1)}
+.t-forest:hover .icon{animation:floaty 1s ease-in-out infinite}
+
+/* 13 畢業問卷：夢幻星空畢業紀念風 */
+.t-grad{background:radial-gradient(1.5px 1.5px at 15% 20%,#fff,transparent),radial-gradient(2px 2px at 60% 12%,#fffbe0,transparent),radial-gradient(1.5px 1.5px at 82% 42%,#fff,transparent),radial-gradient(2px 2px at 30% 62%,rgba(255,255,255,.6),transparent),radial-gradient(1.5px 1.5px at 70% 78%,#fff,transparent),linear-gradient(160deg,#2c4474,#1b1535 62%);color:#f3f0ff;font-family:var(--round);border-radius:22px;border:1px solid #3a3470}
+.t-grad::after{content:"✦";right:22px;bottom:16px;font-size:44px;color:#ff7a8c;opacity:.55;transition:transform .8s}
+.t-grad .tag{background:rgba(255,122,140,.18);color:#ffb0bb}
+.t-grad h3{font-weight:400;color:#fff}
+.t-grad p{color:#cdc7ef}
+.t-grad .btn{background:linear-gradient(90deg,#ff7a8c,#ffb38a);color:#1b1535;font-family:var(--round);font-weight:400}
+.t-grad .btn:hover{box-shadow:0 0 20px rgba(255,122,140,.6)}
+.t-grad:hover{transform:translateY(-8px);box-shadow:0 18px 44px rgba(90,70,200,.4)}
+.t-grad:hover::after{transform:rotate(180deg) scale(1.4);opacity:1}
+.t-grad:hover .icon{animation:floaty 1.2s ease-in-out infinite}
+
+/* 14 老師模擬器：校園黑板風 */
+.t-chalk{background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.07),transparent 60%),#1c342d;color:#f4f1e8;border:10px solid #7a5230;border-radius:6px;box-shadow:inset 0 0 30px rgba(0,0,0,.45),0 6px 0 #5a3b20;font-family:var(--kai)}
+.t-chalk::after{right:18px;bottom:12px;width:30px;height:8px;border-radius:3px;background:#f4f1e8;box-shadow:38px 0 0 #f4d35e,-38px 0 0 #8fd3f4;transform:rotate(-6deg)}
+.t-chalk .tag{background:transparent;color:#f4f1e8;border:1.5px dashed rgba(244,241,232,.7)}
+.t-chalk h3{color:#f4d35e;font-weight:700;font-size:25px;justify-self:start;width:fit-content;background:linear-gradient(#f0725a,#f0725a) no-repeat 0 100%/0 3px;transition:background-size .4s}
+.t-chalk p{color:#dcd8cb;font-size:16px}
+.t-chalk .btn{background:#c9382b;color:#fff;border-radius:6px}
+.t-chalk .btn:hover{background:#e04a3c}
+.t-chalk:hover{transform:translateY(-6px)}
+.t-chalk:hover h3{background-size:100% 3px}
+.t-chalk:hover .icon{animation:wobble .5s ease-in-out infinite}
+
+/* 15 學生吵架：溫馨校園繪本風 */
+.t-story{background:#18221f;color:#e3ebe6;border-radius:18px;font-family:var(--kai);border:2px solid #2c3a35}
+.t-story::before{right:-24px;bottom:-26px;width:150px;height:110px;border-radius:50%;background:rgba(229,170,53,.12)}
+.t-story::after{content:"!?";right:30px;bottom:18px;font:700 42px var(--kai);color:rgba(229,170,53,.45);transition:transform .3s}
+.t-story .tag{background:#e5aa35;color:#2e2100}
+.t-story h3{color:#e5aa35;font-weight:700;font-size:25px}
+.t-story p{color:#c3d0c8;font-size:16px}
+.t-story .btn{background:#e5aa35;color:#2e2100;border-radius:14px 14px 14px 2px}
+.t-story .btn:hover{filter:brightness(1.1)}
+.t-story:hover{transform:translateY(-6px);box-shadow:0 16px 34px rgba(0,0,0,.35)}
+.t-story:hover::after{animation:wobble .4s ease-in-out infinite}
+.t-story:hover .icon{animation:pop .5s ease forwards}
+
+/* 16 當老師的一天：卡通漫畫分鏡風 */
+.t-comic{background:radial-gradient(circle,rgba(0,0,0,.09) 1.2px,transparent 1.7px) 0 0/10px 10px,#f0e9da;color:#1f1c16;border:3px solid #1f1c16;border-radius:4px;box-shadow:6px 6px 0 #1f1c16;transform:rotate(-1deg)}
+.t-comic::after{content:"嘿!";right:12px;bottom:12px;width:74px;height:74px;display:grid;place-items:center;font:900 18px var(--sans);color:#c0392b;background:#ffd23f;clip-path:polygon(50% 0,61% 30%,95% 18%,72% 45%,100% 62%,66% 66%,72% 100%,50% 76%,26% 100%,32% 68%,0 62%,28% 45%,6% 18%,40% 30%);transition:transform .3s}
+.t-comic .tag{background:#1f1c16;color:#fff;border-radius:2px}
+.t-comic h3{font-size:24px}
+.t-comic p{color:#3a342b;padding-right:40px}
+.t-comic .btn{background:#c0392b;color:#fff;border:3px solid #1f1c16;border-radius:4px;box-shadow:3px 3px 0 #1f1c16}
+.t-comic .btn:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 #1f1c16}
+.t-comic:hover{transform:rotate(1deg) translateY(-4px);box-shadow:10px 10px 0 #1f1c16}
+.t-comic:hover::after{transform:scale(1.25) rotate(12deg)}
+
+/* 17 手搖飲：甜美手搖飲店風 */
+.t-drink{background:linear-gradient(180deg,#fff0f5 0%,#ffd6e2 62%,#ffb3c7 100%);color:#2b2250;border-radius:26px 26px 36px 36px;border:3px solid #e0577e;padding-bottom:58px}
+.t-drink::before{left:0;right:0;bottom:0;height:46px;background:radial-gradient(circle,#3b2a55 0 6px,transparent 7px) 0 0/22px 20px;opacity:.85}
+.t-drink .tag{background:#9b6bff;color:#fff}
+.t-drink h3{color:#c63e66}
+.t-drink p{color:#4b3a66}
+.t-drink .btn{background:#e0577e;color:#fff;box-shadow:0 4px 0 #a8395a}
+.t-drink .btn:hover{transform:translateY(2px);box-shadow:0 2px 0 #a8395a}
+.t-drink:hover{transform:translateY(-8px);box-shadow:0 18px 36px rgba(224,87,126,.35)}
+.t-drink:hover::before{animation:rise .7s linear infinite;background-size:22px 20px}
+.t-drink:hover .icon{animation:floaty .9s ease-in-out infinite}
+
+/* 18 夾娃娃機：可愛童趣風 */
+.t-claw{background:#fff8ef;color:#2b2430;border-radius:24px;border:3px solid #ff7a59;font-family:var(--round)}
+.t-claw::after{right:16px;bottom:16px;width:60px;height:60px;border-radius:50%;background:linear-gradient(180deg,#ff8f70 50%,#fff 50%);border:3px solid #2b2430;box-shadow:-46px 18px 0 -10px #b7aac0;transition:transform .5s}
+.t-claw .tag{background:#ffe4d8;color:#b8442a}
+.t-claw h3{font-weight:400;color:#2b2430}
+.t-claw p{color:#5a4f60;padding-right:30px}
+.t-claw .btn{background:#ff7a59;color:#fff;font-family:var(--round);font-weight:400;box-shadow:0 4px 0 #c4502f}
+.t-claw .btn:hover{transform:translateY(2px);box-shadow:0 2px 0 #c4502f}
+.t-claw:hover{transform:translateY(-8px);box-shadow:0 16px 32px rgba(255,122,89,.3)}
+.t-claw:hover .icon{transform-origin:top center;animation:swing .8s ease-in-out infinite}
+.t-claw:hover::after{transform:rotate(200deg) translateY(-4px)}
+
+/* 19 友情小故事：手繪療癒文青風（筆記本） */
+.t-note{background:linear-gradient(90deg,transparent 34px,rgba(224,90,90,.45) 34px 36px,transparent 36px),repeating-linear-gradient(180deg,transparent 0 27px,rgba(59,70,57,.14) 27px 28px),#fdfaf3;color:#3b4639;font-family:var(--kai);border-radius:6px;padding:38px 22px 24px 54px;box-shadow:0 1px 0 #e6dfd0,0 4px 0 -1px #fdfaf3,0 5px 0 -1px #e6dfd0,0 12px 26px rgba(0,0,0,.08)}
+.t-note::before{top:8px;left:50%;width:92px;height:22px;background:rgba(224,178,74,.6);transform:translateX(-50%) rotate(-3deg);transition:transform .4s}
+.t-note .tag{background:#dfe8d8;color:#32402f}
+.t-note h3{color:#32402f;font-weight:700;font-size:25px}
+.t-note p{font-size:16px;color:#4a5547}
+.t-note .btn{background:#3b4639;color:#fdfaf3;border-radius:6px;font-family:var(--kai);font-weight:700}
+.t-note .btn:hover{background:#556650}
+.t-note:hover{transform:translateY(-6px) rotate(.6deg)}
+.t-note:hover::before{transform:translateX(-50%) rotate(4deg)}
+.t-note:hover .icon{animation:wobble .6s ease-in-out}
+
+/* 20 幸運抽籤：課堂派對風（現代 App） */
+.t-app{background:#fff;color:#1b1511;border-radius:22px;border:1px solid #f0e6d8;box-shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(27,21,17,.08);padding-top:30px}
+.t-app::before{top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,#ff8a4c,#e63946,#ffc933)}
+.t-app .icon{font-size:30px;background:#fff3e6;padding:10px;border-radius:16px}
+.t-app .tag{background:#fff3e6;color:#b4410a}
+.t-app p{color:#5a4b3e}
+.t-app .btn{background:linear-gradient(90deg,#ff8a4c,#e63946);color:#fff;border-radius:14px;box-shadow:0 6px 16px rgba(230,57,70,.3)}
+.t-app .btn:hover{box-shadow:0 8px 22px rgba(230,57,70,.45)}
+.t-app:hover{transform:translateY(-8px);box-shadow:0 2px 4px rgba(0,0,0,.05),0 20px 40px rgba(27,21,17,.14)}
+.t-app:hover .icon{animation:spin .7s cubic-bezier(.3,1.4,.6,1)}
+
+/* 21 幸運扭蛋：嘉年華抽獎風（彩票） */
+.t-gacha{background:radial-gradient(circle at 0 50%,transparent 0 13px,#162238 14px) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,transparent 0 13px,#162238 14px) right/51% 100% no-repeat;color:#e8eef9;border-radius:16px}
+.t-gacha::before{inset:9px;border:1.5px dashed rgba(255,200,61,.45);border-radius:10px}
+.t-gacha::after{top:0;bottom:0;left:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);transform:translateX(-160%) skewX(-20deg)}
+.t-gacha .tag{background:#ff7466;color:#fff}
+.t-gacha h3{color:#ffc83d}
+.t-gacha p{color:#b4c2da}
+.t-gacha .btn{background:#ffc83d;color:#3a2600}
+.t-gacha .btn:hover{box-shadow:0 0 20px rgba(255,200,61,.6)}
+.t-gacha:hover{transform:translateY(-8px);filter:drop-shadow(0 14px 24px rgba(255,200,61,.25))}
+.t-gacha:hover::after{animation:shine 1s ease}
+.t-gacha:hover .icon{animation:pop .5s ease forwards}
+
+/* 22 轉盤遊樂園：遊樂園嘉年華風 */
+.t-wheel{background:repeating-linear-gradient(90deg,#f2766a 0 22px,#fff3d6 22px 44px) top/100% 22px no-repeat,#fff6dd;color:#1b2a2f;border-radius:18px;border:2px solid #e8574a;padding-top:46px}
+.t-wheel::before{top:22px;left:0;right:0;height:12px;background:radial-gradient(circle at 11px 0,#f2766a 0 11px,transparent 12px) 0 0/44px 12px repeat-x}
+.t-wheel::after{right:-34px;bottom:-34px;width:130px;height:130px;border-radius:50%;background:conic-gradient(#f2766a 0 60deg,#fff3d6 0 120deg,#5bd6a5 0 180deg,#ffc83d 0 240deg,#f2766a 0 300deg,#2d4f57 0 360deg);opacity:.35;transition:transform 1.4s cubic-bezier(.2,.8,.2,1)}
+.t-wheel .tag{background:#5bd6a5;color:#10262b}
+.t-wheel p{color:#3a4b50}
+.t-wheel .btn{background:#1f8a63;color:#fff}
+.t-wheel .btn:hover{background:#17704f}
+.t-wheel:hover{transform:translateY(-8px);box-shadow:0 16px 32px rgba(232,87,74,.25)}
+.t-wheel:hover::after{transform:rotate(540deg)}
+.t-wheel:hover .icon{animation:spin 1.2s linear infinite}
+
+/* 23 音樂工作室：霓虹錄音室風 */
+.t-studio{background:linear-gradient(#191822,#191822) padding-box,linear-gradient(135deg,#8b72ff,#ec6fa8,#ffd84d) border-box;border:2px solid transparent;color:#ecebf4;border-radius:18px}
+.t-studio::after{right:18px;bottom:18px;width:72px;height:48px;transform-origin:bottom;background:linear-gradient(#8b72ff,#8b72ff) 0 100%/8px 50% no-repeat,linear-gradient(#ec6fa8,#ec6fa8) 13px 100%/8px 85% no-repeat,linear-gradient(#ffd84d,#ffd84d) 26px 100%/8px 40% no-repeat,linear-gradient(#8b72ff,#8b72ff) 39px 100%/8px 100% no-repeat,linear-gradient(#ec6fa8,#ec6fa8) 52px 100%/8px 60% no-repeat,linear-gradient(#ffd84d,#ffd84d) 65px 100%/7px 30% no-repeat;opacity:.55}
+.t-studio .tag{background:#3a3270;color:#d9d4ff}
+.t-studio h3{color:#ffd84d}
+.t-studio p{color:#bdbad0;padding-right:20px}
+.t-studio .btn{background:#ffd84d;color:#14131a;border-radius:12px}
+.t-studio .btn:hover{box-shadow:0 0 0 3px #ec6fa8}
+.t-studio:hover{transform:translateY(-8px);box-shadow:0 0 30px rgba(139,114,255,.45)}
+.t-studio:hover::after{animation:eq .6s ease-in-out infinite;opacity:1}
+.t-studio:hover .icon{animation:bounce .6s ease infinite}
+
+/* 24 做回自己：黑膠唱片風 */
+.t-vinyl{background:linear-gradient(135deg,#2a1f1a,#14110f);color:#f3ece2;border-radius:18px;border:1px solid #3a2d25}
+.t-vinyl .top{justify-content:flex-start}
+.t-vinyl::after{right:-48px;top:-48px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,#14110f 0 4%,#e85d4a 4.5% 17%,#111 17.5% 19%,transparent 19.5%),repeating-radial-gradient(circle,#161616 0 2px,#262626 2px 4px);box-shadow:0 0 0 2px #000}
+.t-vinyl .tag{background:#e85d4a;color:#fff}
+.t-vinyl h3{font-family:var(--serif);color:#fff;font-size:26px}
+.t-vinyl p{color:#d3c7b8}
+.t-vinyl audio{color-scheme:dark}
+.t-vinyl .btn{background:transparent;color:#f3ece2;border:2px solid #f3ece2}
+.t-vinyl .btn:hover{background:#f3ece2;color:#14110f}
+.t-vinyl:hover{transform:translateY(-8px);box-shadow:0 18px 40px rgba(232,93,74,.25)}
+.t-vinyl:hover::after,.t-vinyl.playing::after{animation:spin 2.4s linear infinite}
+
+/* ================= 頁尾 ================= */
+footer{text-align:center;padding:28px 16px 44px;color:var(--ink-soft);font-size:14px;border-top:1px solid var(--chip-line)}
+
+/* ================= 手機版 ================= */
+@media (max-width:640px){
+  .hero{padding:48px 16px 34px}
+  .floaters span:nth-child(n+5){display:none}
+  .floaters span{opacity:.35}
+  main{padding:24px 16px 48px}
+  .grid{grid-template-columns:1fr;gap:22px}
+  .card{min-height:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="floaters" aria-hidden="true"><span>🎮</span><span>🧋</span><span>🎡</span><span>🎹</span><span>🐶</span><span>🎲</span></div>
+  <div class="hero-inner">
+    <span class="kicker">✨ <b>班級 AI 自製作品</b>・線上展覽</span>
+    <h1><span class="nw">Claude 自製作品</span><span class="dot">・</span><wbr><span class="nw mark">班級成果展</span></h1>
+    <p class="sub">不用寫程式，只要說清楚需求，每個人都能做出自己的互動工具！</p>
+    <div class="stats" id="stats"></div>
+  </div>
+</header>
+
+<nav class="filters" aria-label="作品分類">
+  <div class="filters-inner" id="filters"></div>
+</nav>
+
+<main>
+  <div class="grid" id="grid" aria-live="polite"></div>
+</main>
+
+<footer>
+  每一件作品都是同學和 Claude 對話完成的 ・ 點「立即體驗」會在新分頁開啟作品
+</footer>
+
+<script>
+/* =========================================================
+   作品資料：要新增作品，只要在這裡加一筆，並把檔案放進 works/ 資料夾
+   file  = works 資料夾裡的原始檔名（一字不差，包含空格）
+   theme = 卡片風格（對應上方 CSS 的 .t-xxx）
+   ========================================================= */
+const CATS = {
+  all:'全部作品', action:'🎮 動作競技', '3d':'🧊 3D 冒險', school:'🏫 校園故事',
+  quiz:'💭 心理測驗', tool:'🎲 課堂工具', music:'🎵 音樂創作'
+};
+
+const WORKS = [
+  {file:'BeybladeX戰鬥陀螺.html', cat:'action', theme:'beyblade', icon:'🌀', tag:'熱血競技場風',
+   desc:'選三顆陀螺組隊，抓準 Go Shoot 時機發射，把對手撞出場外！'},
+  {file:'熱血排球對決.html', cat:'action', theme:'volley', icon:'🏐', tag:'運動熱血風',
+   desc:'3 對 3 排球賽，跑位、跳躍、蓄力殺球，先搶下 7 分就獲勝。'},
+  {file:'街頭對打.html', cat:'action', theme:'street', icon:'🥊', tag:'復古街機風',
+   desc:'一對一格鬥，出拳、踢腿、防禦、集氣放必殺，還能雙人對戰。'},
+  {file:'哥吉拉VS.html', cat:'action', theme:'godzilla', icon:'🦖', tag:'怪獸特攝電影風',
+   desc:'操控哥吉拉用爪擊與原子吐息，連闖七關打倒各路怪獸。'},
+  {file:'小狗快跑.html', cat:'action', theme:'dog', icon:'🐶', tag:'可愛童趣風',
+   desc:'幫小狗跳過障礙、撿餅乾，跑過五個場景後直闖無盡模式。'},
+  {file:'偷一顆蛋.html', cat:'action', theme:'egg', icon:'🥚', tag:'像素沙漠冒險風',
+   desc:'趁巨獸睡著按住前進偷蛋，牠一睜眼就要立刻停下！'},
+  {file:'夜市射氣球.html', cat:'action', theme:'night', icon:'🎈', tag:'台灣夜市燈籠風',
+   desc:'限時 20 秒射破氣球，連擊越多得分加倍，還能挑戰排行榜。'},
+
+  {file:'台北車站攻防戰.html', cat:'3d', theme:'taipei', icon:'🚇', tag:'捷運站牌戰術風',
+   desc:'在 3D 台北車站月台與地下街，帶隊友擊退搭捷運來襲的敵軍。'},
+  {file:'巷戰突擊 3D.html', cat:'3d', theme:'alley', icon:'🎯', tag:'暗夜軍事科技風',
+   desc:'第一人稱守住深夜巷弄，換槍爆頭，撐過一波波敵人。'},
+  {file:'屋頂狂奔 (2).html', name:'屋頂狂奔', cat:'3d', theme:'roof', icon:'🏃', tag:'都會跑酷動感風',
+   desc:'在 3D 城市屋頂上跑、跳、滑行，和兩位對手比誰跑得遠。'},
+  {file:'方塊大陸.html', cat:'3d', theme:'block', icon:'⛏️', tag:'像素方塊風',
+   desc:'挖礦、蓋房、打怪，還能穿越傳送門到地獄與天空島冒險。'},
+  {file:'森林馴獸師 3D.html', cat:'3d', theme:'forest', icon:'🦌', tag:'自然森林風',
+   desc:'走進 3D 森林馴服動物、按時餵食，集滿 35 隻就通關。'},
+  {file:'畢業問卷.html', cat:'3d', theme:'grad', icon:'🎓', tag:'星空畢業紀念風',
+   desc:'3D 跑酷闖關，遇到問題門要答完畢業友情問卷才能前進。'},
+
+  {file:'老師模擬器 .html', cat:'school', theme:'chalk', icon:'📚', tag:'校園黑板風',
+   desc:'45 分鐘內教完一章，用點名、丟粉筆管好 22 個調皮學生。'},
+  {file:'學生吵架.html', cat:'school', theme:'story', icon:'💬', tag:'溫馨校園繪本風',
+   desc:'化身導師調解兩位同學的爭吵，六關抉擇決定班級氣氛。'},
+  {file:'當老師的一天：動畫版.html', cat:'school', theme:'comic', icon:'🎬', tag:'卡通漫畫分鏡風',
+   desc:'自動播放的爆笑校園動畫，中途還穿插小遊戲要你動手。'},
+
+  {file:'你是班上的哪一杯手搖飲_.html', name:'你是班上的哪一杯手搖飲?', cat:'quiz', theme:'drink', icon:'🧋', tag:'甜美手搖飲店風',
+   desc:'十題限時心理測驗，一層層調出專屬於你的手搖飲人格。'},
+  {file:'動物系朋友夾娃娃機.html', cat:'quiz', theme:'claw', icon:'🧸', tag:'可愛童趣風',
+   desc:'移動爪子夾出扭蛋，打開看看你是哪一種動物系朋友。'},
+  {file:'友情小故事問答 .html', cat:'quiz', theme:'note', icon:'📖', tag:'手繪療癒文青風',
+   desc:'五個友情小故事任你選，測出你心中的友情類型。'},
+
+  {file:'幸運抽籤：抽出 2 位同學 .html', cat:'tool', theme:'app', icon:'🎲', tag:'課堂派對風',
+   desc:'拉霸、翻牌、扭蛋三種抽法，還能隨機分組、指派任務。'},
+  {file:'幸運扭蛋.html', cat:'tool', theme:'gacha', icon:'🎁', tag:'嘉年華抽獎風',
+   desc:'按下按鈕轉動抽獎，獎品與機率都能自訂，辦活動超好用。'},
+  {file:'轉盤遊樂園.html', cat:'tool', theme:'wheel', icon:'🎡', tag:'遊樂園嘉年華風',
+   desc:'轉知識轉盤答題賺票券，集滿三張就能玩獎品轉盤。'},
+
+  {file:'瀏覽器音樂工作室.html', cat:'music', theme:'studio', icon:'🎹', tag:'霓虹錄音室風',
+   desc:'在格子上點畫音符就能編曲，還有 K-pop 範例與闖關任務。'},
+  {file:'做回自己.mp3', cat:'music', theme:'vinyl', icon:'🎵', tag:'黑膠唱片風', audio:true,
+   desc:'同學的原創音樂作品，按下播放鍵，一起聽聽這首歌。'}
+];
+
+const grid = document.getElementById('grid');
+const filters = document.getElementById('filters');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nameOf = w => w.name || w.file.replace(/\.(html|mp3)$/i, '').trim();
+const urlOf = w => 'works/' + encodeURIComponent(w.file);
+
+/* 統計 */
+const htmlCount = WORKS.filter(w => !w.audio).length;
+const audioCount = WORKS.length - htmlCount;
+document.getElementById('stats').innerHTML =
+  `<span class="stat"><strong>${htmlCount}</strong> 件互動網頁</span>` +
+  (audioCount ? `<span class="stat"><strong>${audioCount}</strong> 首原創音樂</span>` : '') +
+  `<span class="stat">💬 用說的就能做</span>`;
+
+/* 卡片 */
+function cardHTML(w, i){
+  const name = esc(nameOf(w)), url = urlOf(w);
+  const action = w.audio
+    ? `<audio controls preload="none" src="${url}" aria-label="播放「${name}」"></audio>
+       <a class="btn" href="${url}" target="_blank" rel="noopener" aria-label="立即聆聽「${name}」（另開新分頁）">立即聆聽 <span class="arr" aria-hidden="true">♪</span></a>`
+    : `<a class="btn" href="${url}" target="_blank" rel="noopener" aria-label="立即體驗「${name}」（另開新分頁）">立即體驗 <span class="arr" aria-hidden="true">→</span></a>`;
+  return `<article class="card t-${w.theme}" style="--d:${(i % 12) * 0.05}s">
+    <div class="top"><span class="icon" aria-hidden="true">${w.icon}</span><span class="tag">${esc(w.tag)}</span></div>
+    <h3>${name}</h3>
+    <p>${esc(w.desc)}</p>
+    ${action}
+  </article>`;
+}
+
+function render(cat){
+  const list = cat === 'all' ? WORKS : WORKS.filter(w => w.cat === cat);
+  grid.innerHTML = list.length ? list.map(cardHTML).join('') : '<p class="empty">這個分類還沒有作品</p>';
+  grid.querySelectorAll('.t-vinyl audio').forEach(a => {
+    const card = a.closest('.card');
+    a.addEventListener('play', () => card.classList.add('playing'));
+    a.addEventListener('pause', () => card.classList.remove('playing'));
+    a.addEventListener('ended', () => card.classList.remove('playing'));
+  });
+}
+
+/* 分類按鈕 */
+Object.entries(CATS).forEach(([key, label]) => {
+  const n = key === 'all' ? WORKS.length : WORKS.filter(w => w.cat === key).length;
+  if (!n) return;
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.type = 'button';
+  b.dataset.cat = key;
+  b.setAttribute('aria-pressed', key === 'all');
+  b.innerHTML = `${label}<small>${n}</small>`;
+  b.addEventListener('click', () => {
+    filters.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b));
+    render(key);
+  });
+  filters.appendChild(b);
+});
+
+render('all');
+</script>
+</body>
+</html>
