@@ -1,0 +1,790 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>老師模擬器</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;800&family=Noto+Serif+TC:wght@900&display=swap">
+<style>
+/* Layout: blackboard-green page. Chalk HUD on top, framed classroom view seen from the podium, wooden chalk-tray action bar below, report card at the bottom after class. */
+:root{
+  --board:#1c342d; --board2:#264a40; --chalk:#f3f0e4; --dim:#aebcb0;
+  --yellow:#f4d35e; --blue:#8fd3f4; --pink:#f59fb3; --green:#a8e6a1; --red:#f0725a;
+  --wood:#7a5230; --wood2:#5a3b20;
+  --display:'Noto Serif TC','Songti TC','PMingLiU',serif;
+  --body:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--board);color:var(--chalk);
+  font:500 15px/1.5 var(--body);
+  padding-block:14px 28px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.app{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:6px 16px;flex-wrap:wrap}
+h1{font:900 clamp(26px,5vw,38px)/1.1 var(--display);margin:0;letter-spacing:.04em}
+.sub{margin:0;color:var(--dim);font-size:14px}
+.chip{border:2px solid var(--dim);border-radius:999px;padding:2px 12px;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.hud{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.stat{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:baseline;background:var(--board2);border-radius:10px;padding:8px 10px;min-width:0}
+.lab{font-size:13px;color:var(--dim)}
+.val{font:800 18px/1 var(--body);font-variant-numeric:tabular-nums}
+.bar{grid-column:1/-1;height:8px;border-radius:4px;background:rgba(0,0,0,.28);overflow:hidden;display:block}
+.bar>i{display:block;height:100%;width:0;border-radius:4px;background:var(--c);transition:width .25s}
+.stat[data-k=progress]{--c:var(--yellow)}
+.stat[data-k=order]{--c:var(--blue)}
+.stat[data-k=bp]{--c:var(--pink)}
+.stat[data-k=voice]{--c:var(--green)}
+.stat[data-k=time]{--c:var(--chalk)}
+.stat[data-k=bp].hot{--c:var(--red)}
+.stage{position:relative;border:6px solid var(--wood);border-radius:6px;background:#111;line-height:0;touch-action:manipulation}
+canvas{width:100%;height:auto;display:block;cursor:pointer}
+.banner{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:max-content;max-width:92%;background:var(--red);color:#fff;font:800 15px/1.3 var(--body);padding:8px 14px;border-radius:8px;text-align:center}
+.overlay{position:absolute;inset:0;background:rgba(20,38,32,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px;text-align:center;line-height:1.5;overflow:auto}
+.overlay h2{font:900 clamp(24px,5vw,40px)/1.15 var(--display);margin:0}
+.overlay p{margin:0;max-width:34em;font-size:clamp(13px,2.4vw,16px)}
+.overlay .small{color:var(--dim);font-size:clamp(12px,2.1vw,14px)}
+.btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.go,.ghost{font:800 17px var(--body);border-radius:10px;padding:10px 26px;cursor:pointer;border:2px solid var(--yellow)}
+.go{background:var(--yellow);color:#2a2410}
+.ghost{background:transparent;color:var(--yellow)}
+.go:focus-visible,.ghost:focus-visible,.act:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.log{min-height:3em;margin:0;font-size:15px}
+.tray{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;background:var(--wood);padding:10px;border-radius:10px;border-bottom:6px solid var(--wood2)}
+.act{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:2px;align-items:center;padding:10px 4px;background:#f3f0e4;color:#2b2a22;border:0;border-radius:8px;font-family:var(--body);cursor:pointer;min-width:0}
+.act .n{font-weight:800;font-size:16px}
+.act .d{font-size:12px;color:#6b6a5c}
+.act .k{position:absolute;top:3px;left:6px;font-size:10px;color:#8a8878}
+.act::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--cd,0)*100%);background:rgba(43,42,34,.38);pointer-events:none}
+.act:active{transform:translateY(1px)}
+.hint{margin:0;font-size:13px;color:var(--dim);min-height:1.5em}
+.report{background:var(--board2);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.report h3{margin:0;font:900 22px var(--display)}
+.rows{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:7.5em minmax(0,1fr) 2.6em;gap:2px 10px;align-items:center}
+.row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sc{font-variant-numeric:tabular-nums;font-weight:800;text-align:right}
+.row .tr{height:10px;background:rgba(0,0,0,.28);border-radius:5px;overflow:hidden}
+.row .tr i{display:block;height:100%;background:var(--c)}
+.row .cm{grid-column:2/-1;font-size:12.5px;color:var(--dim)}
+@media(max-width:640px){
+  .hud{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hud .stat:last-child{grid-column:span 2}
+  .tray{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .banner{font-size:12px;padding:5px 9px;top:6px}
+  .row{grid-template-columns:6.2em minmax(0,1fr) 2.4em}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main class="app">
+  <header class="top">
+    <div>
+      <h1>老師模擬器</h1>
+      <p class="sub">國二 3 班 · 22 位同學 · 下課前教完第 6 章</p>
+    </div>
+    <span class="chip" id="complaints">家長投訴 0 / 3</span>
+  </header>
+
+  <section class="hud" aria-label="狀態">
+    <div class="stat" data-k="progress"><span class="lab">進度</span><b class="val" id="v-progress">0%</b><i class="bar"><i id="b-progress"></i></i></div>
+    <div class="stat" data-k="order"><span class="lab">秩序</span><b class="val" id="v-order">100</b><i class="bar"><i id="b-order"></i></i></div>
+    <div class="stat" data-k="bp"><span class="lab">血壓</span><b class="val" id="v-bp">12</b><i class="bar"><i id="b-bp"></i></i></div>
+    <div class="stat" data-k="voice"><span class="lab">嗓子</span><b class="val" id="v-voice">100</b><i class="bar"><i id="b-voice"></i></i></div>
+    <div class="stat" data-k="time"><span class="lab">下課倒數</span><b class="val" id="v-time">45 分</b><i class="bar"><i id="b-time"></i></i></div>
+  </section>
+
+  <div class="stage" id="stage">
+    <canvas id="scene" width="800" height="480" role="img" aria-label="從講台看出去的教室，二十二位學生坐在四排課桌後，名字寫在桌前"></canvas>
+    <div class="banner" id="banner" hidden></div>
+    <div class="overlay" id="start">
+      <h2>老師模擬器</h2>
+      <p>45 分鐘內（遊戲約 4 分鐘）把第 6 章教完。全班 22 人，學生會睡覺、滑手機、傳紙條，還會回答出你想不到的答案。</p>
+      <p class="small">點一位同學選人，再用點名、丟粉筆、罰站。教務主任隨時會出現在後門窗口。</p>
+      <button class="go" id="start-btn" type="button">上課！</button>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <h2 id="end-title"></h2>
+      <p id="end-sub"></p>
+      <p class="small" id="end-avg"></p>
+      <div class="btns">
+        <button class="ghost" id="see-report" type="button">看成績單</button>
+        <button class="go" id="again-btn" type="button">再上一堂</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="log" id="log" aria-live="polite">上課鐘響了。</p>
+
+  <div class="tray" id="tray">
+    <button class="act" data-a="teach" type="button"><span class="k">1</span><span class="n">講課</span><span class="d">寫黑板</span></button>
+    <button class="act" data-a="bang" type="button"><span class="k">2</span><span class="n">敲講桌</span><span class="d">全班醒醒</span></button>
+    <button class="act" data-a="ask" type="button"><span class="k">3</span><span class="n">點名</span><span class="d">起立回答</span></button>
+    <button class="act" data-a="chalk" type="button"><span class="k">4</span><span class="n">丟粉筆</span><span class="d">叫醒他</span></button>
+    <button class="act" data-a="stand" type="button"><span class="k">5</span><span class="n">罰站</span><span class="d">站到下課</span></button>
+    <button class="act" data-a="tea" type="button"><span class="k">6</span><span class="n">喝茶</span><span class="d">保溫杯</span></button>
+    <button class="act" data-a="scold" type="button"><span class="k">7</span><span class="n">罵人</span><span class="d">選人或全班</span></button>
+  </div>
+  <p class="hint" id="hint">先點一位同學，再用點名、丟粉筆、罰站或罵人；不選人就是罵全班。</p>
+
+  <section class="report" id="report" hidden>
+    <h3>小考成績單</h3>
+    <div class="rows" id="rows"></div>
+  </section>
+</main>
+<script>
+(function(){
+'use strict';
+var W=800,H=480;
+var cv=document.getElementById('scene'),ctx=cv.getContext('2d');
+var NAMES=['陳大寶','林阿呆','黃小傑','王志豪','李阿財','張小花','吳大雄','劉小明','蔡阿狗','楊小雞','許阿發','鄭大頭','謝小強','洪阿銘','郭小寶','邱阿土','曾小豬','呂阿肥','蕭大傻','簡阿福','杜小弟','盧阿牛','葉大猩','潘阿旺'];
+var COLX=[67,200,333,467,600,733],ROWY=[158,222,292,364],ROWS=[0.5,0.64,0.8,1],ROWN=[6,5,6,5],NSTU=22;
+function seatX(s){return COLX[s.col]+(s.row%2?66:0);}
+var SKINS=['#f1c9a5','#e8b98f','#d9a577','#f6d6b8','#c98f63'];
+var HAIRS=['#1b1512','#2b1d14','#3a2a1c','#0f0f12'];
+var SHIRTS=['#f4f1e8','#f4f1e8','#f4f1e8','#cfe0f5','#e9e2c8','#3b6a99'];
+var TAU=Math.PI*2;
+
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+function makeStudents(){
+  var arr=[];
+  for(var i=0;i<NSTU;i++){
+    var row=i<6?0:i<11?1:i<17?2:3,col=i-[0,6,11,17][row];
+    var r=rng(i*7919+31),pim=[],np=Math.floor(r()*6);
+    for(var k=0;k<np;k++)pim.push([(r()-.5)*34,-6+r()*22,1+r()*1.5]);
+    var q=rng(Math.floor(Math.random()*1e9));
+    arr.push({i:i,col:col,row:row,name:NAMES[i],no:i+1,
+      skin:SKINS[Math.floor(r()*SKINS.length)],hair:HAIRS[Math.floor(r()*HAIRS.length)],
+      shirt:SHIRTS[Math.floor(r()*SHIRTS.length)],hairStyle:Math.floor(r()*5),
+      headW:.9+r()*.35,headH:.9+r()*.3,eyeL:.7+r()*.7,eyeR:.7+r()*.7,eyeY:(r()-.5)*4,eyeGap:.8+r()*.5,
+      glasses:r()<.35,unibrow:r()<.4,nose:.8+r()*1,teeth:r()<.55,ears:.8+r()*.7,tilt:(r()-.5)*6,
+      drool:r()<.3,lazy:r()<.4,pim:pim,
+      iq:.1+r()*.4,drift:.6+r()*1,
+      mood:'idle',att:(col===2&&row<3)?32+q()*8:70+q()*25,learn:0,until:0,bubble:null});
+  }
+  return arr;
+}
+
+/* ---------- hair ---------- */
+function hair(s,rx,ry){
+  ctx.fillStyle=s.hair;ctx.strokeStyle=s.hair;
+  var st=s.hairStyle,top=-ry*1.1;
+  if(st===3){
+    ctx.beginPath();ctx.ellipse(-rx+3,-2,6,10,0,0,TAU);ctx.fill();
+    ctx.beginPath();ctx.ellipse(rx-3,-2,6,10,0,0,TAU);ctx.fill();
+    ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(-12,-ry+4);ctx.quadraticCurveTo(0,-ry-3,12,-ry+6);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-9,-ry+7);ctx.quadraticCurveTo(0,-ry+1,10,-ry+9);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.ellipse(-6,-ry+9,6,3,-.4,0,TAU);ctx.fill();
+    return;
+  }
+  ctx.beginPath();ctx.ellipse(0,-ry*.35,rx+2,ry,0,Math.PI,0);ctx.closePath();ctx.fill();
+  if(st===0||st===4){ctx.fillRect(-rx-1,-9,7,20);ctx.fillRect(rx-6,-9,7,20);}
+  if(st===0){
+    for(var k=-3;k<=3;k++){ctx.beginPath();ctx.moveTo(k*7-4,-9);ctx.lineTo(k*7+(k%2?1:-1),-3+(k%2?3:0));ctx.lineTo(k*7+4,-9);ctx.fill();}
+  }
+  if(st===1){
+    for(var j=0;j<6;j++){
+      var bx=-rx+j*(2*rx/5);
+      ctx.beginPath();ctx.moveTo(bx,top+4);ctx.lineTo(bx+(j%2?-4:5),top-10-((j*(s.i+2))%6));ctx.lineTo(bx+2*rx/5,top+4);ctx.fill();
+    }
+  }
+  if(st===2){
+    ctx.beginPath();ctx.moveTo(-rx,-9);ctx.quadraticCurveTo(-2,-ry*1.7,rx+3,-9);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(-8,-ry*1.25);ctx.quadraticCurveTo(-4,-ry*.8,-3,-9);ctx.stroke();
+  }
+  if(st===4){
+    ctx.lineWidth=3;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(0,top-2);ctx.quadraticCurveTo(-5,top-14,6,top-20);ctx.stroke();
+    ctx.lineCap='butt';
+  }
+}
+
+/* ---------- head (local coords, centre = 0,0) ---------- */
+function drawHead(s,mood,t){
+  var rx=22*s.headW,ry=25*s.headH,closed=(mood==='sleep');
+  ctx.fillStyle=s.skin;
+  ctx.beginPath();ctx.ellipse(-rx,2,5*s.ears,8*s.ears,0,0,TAU);ctx.fill();
+  ctx.beginPath();ctx.ellipse(rx,2,5*s.ears,8*s.ears,0,0,TAU);ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,TAU);ctx.fill();
+  ctx.strokeStyle='rgba(60,30,10,.35)';ctx.lineWidth=1.5;ctx.stroke();
+  hair(s,rx,ry);
+  var ey=3+s.eyeY,gap=8*s.eyeGap,side,x,er;
+  for(side=-1;side<=1;side+=2){
+    x=side*gap;er=4.4*(side<0?s.eyeL:s.eyeR);
+    if(closed){
+      ctx.strokeStyle='#2a1a14';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-er,ey);ctx.quadraticCurveTo(x,ey+er*.9,x+er,ey);ctx.stroke();
+    }else{
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x,ey,er*1.25,er,0,0,TAU);ctx.fill();
+      ctx.strokeStyle='rgba(40,20,10,.5)';ctx.lineWidth=1;ctx.stroke();
+      var dx=-side*1.3;if(s.lazy&&side>0)dx=2.4;
+      var dy=mood==='phone'?2:((mood==='stand'||mood==='answering')?-1:.8);
+      ctx.fillStyle='#1b1512';ctx.beginPath();ctx.arc(x+dx,ey+dy,er*.5,0,TAU);ctx.fill();
+    }
+    if(!s.unibrow){ctx.strokeStyle=s.hair;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-5,ey-er-3);ctx.lineTo(x+5,ey-er-3+side*1.5);ctx.stroke();}
+  }
+  if(s.unibrow){ctx.strokeStyle=s.hair;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-gap-6,ey-9);ctx.quadraticCurveTo(0,ey-12,gap+6,ey-9);ctx.stroke();}
+  if(s.glasses){
+    ctx.lineWidth=2.2;ctx.strokeStyle='#1d1d1d';ctx.fillStyle='rgba(190,225,255,.35)';
+    for(side=-1;side<=1;side+=2){ctx.beginPath();ctx.arc(side*gap,ey,8,0,TAU);ctx.fill();ctx.stroke();}
+    ctx.beginPath();ctx.moveTo(-gap+8,ey);ctx.lineTo(gap-8,ey);ctx.stroke();
+  }
+  var ny=ey+9;
+  ctx.fillStyle='#cf8a67';ctx.beginPath();ctx.ellipse(0,ny,3.2*s.nose,2.6*s.nose,0,0,TAU);ctx.fill();
+  ctx.fillStyle='#5a2c1c';ctx.beginPath();ctx.arc(-1.4*s.nose,ny+.6,.9,0,TAU);ctx.arc(1.4*s.nose,ny+.6,.9,0,TAU);ctx.fill();
+  var my=ry*.62,open=0;
+  if(mood==='eat')open=2+Math.abs(Math.sin(t*9))*4;
+  else if(mood==='chat'||mood==='answering')open=1+Math.abs(Math.sin(t*8+s.i))*3.5;
+  else if(closed)open=3;
+  if(open>.5){ctx.fillStyle='#6b1f1a';ctx.beginPath();ctx.ellipse(0,my,6,open,0,0,TAU);ctx.fill();}
+  else{ctx.strokeStyle='#6b2e22';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-7,my-s.tilt*.4);ctx.quadraticCurveTo(0,my+2,7,my+s.tilt*.4);ctx.stroke();}
+  if(s.teeth){
+    ctx.fillStyle='#fff';ctx.strokeStyle='#999';ctx.lineWidth=.8;
+    ctx.fillRect(-3.6,my-1.5,3.4,6.5);ctx.strokeRect(-3.6,my-1.5,3.4,6.5);
+    ctx.fillRect(.2,my-1.5,3.4,6.5);ctx.strokeRect(.2,my-1.5,3.4,6.5);
+  }
+  if(s.drool||closed){
+    var dl=7+3*Math.sin(t*2+s.i);
+    ctx.strokeStyle='rgba(150,210,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(6,my+2);ctx.lineTo(6.5,my+dl);ctx.stroke();
+    ctx.fillStyle='rgba(150,210,255,.9)';ctx.beginPath();ctx.arc(6.5,my+dl+1,1.8,0,TAU);ctx.fill();
+  }
+  for(var p=0;p<s.pim.length;p++){
+    var q=s.pim[p];
+    ctx.fillStyle='#d9534f';ctx.beginPath();ctx.arc(q[0],q[1],q[2],0,TAU);ctx.fill();
+    ctx.fillStyle='rgba(255,230,200,.8)';ctx.beginPath();ctx.arc(q[0]-.3,q[1]-.3,.5,0,TAU);ctx.fill();
+  }
+  if(closed){
+    var br=3+3*(.5+.5*Math.sin(t*1.8+s.i));
+    ctx.fillStyle='rgba(180,225,255,.55)';ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(5,ny+5,br,0,TAU);ctx.fill();ctx.stroke();
+  }
+}
+
+/* ---------- desk ---------- */
+function drawDesk(s){
+  ctx.fillStyle='#d2ad78';ctx.beginPath();ctx.moveTo(-52,8);ctx.lineTo(52,8);ctx.lineTo(60,30);ctx.lineTo(-60,30);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(80,50,20,.4)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='#dcc08c';ctx.fillRect(-58,30,116,32);ctx.strokeStyle='rgba(80,50,20,.35)';ctx.lineWidth=1;ctx.strokeRect(-58,30,116,32);
+  ctx.fillStyle='#4b4b4b';ctx.fillRect(-54,62,5,26);ctx.fillRect(49,62,5,26);
+  var sc0=ROWS[s.row],fs=Math.max(11,16*sc0)/sc0,tilt=(((s.i*37)%7)-3)*.007;
+  ctx.save();ctx.translate(0,47);ctx.rotate(tilt);
+  ctx.fillStyle='#2a1c12';ctx.font='800 '+fs+'px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(s.name,0,0);
+  ctx.strokeStyle='#2a1c12';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-fs*1.6,fs*.62);ctx.lineTo(fs*1.6,fs*.55);ctx.stroke();
+  ctx.restore();ctx.textBaseline='alphabetic';
+}
+
+/* ---------- student ---------- */
+var MOOD_NAME={idle:'看起來在聽',sleep:'睡著了',phone:'偷滑手機',note:'傳紙條',nose:'挖鼻孔',eat:'偷吃東西',chat:'聊天',stand:'罰站中',answering:'回答中'};
+
+function drawStudent(s,t,sel){
+  var x=seatX(s),y=ROWY[s.row],sc=ROWS[s.row],m=s.mood;
+  var standing=(m==='stand'||m==='answering'),sleep=(m==='sleep');
+  var dir=seatX(s)<400?1:-1,ry=25*s.headH;
+  var topY=standing?-86:(sleep?-18:-30);
+  var hy=topY-6-ry;
+  var bob=(m==='idle')?Math.sin(t*1.6+s.i*1.7)*1.2:0;
+  ctx.save();ctx.translate(x,y+bob*sc);ctx.scale(sc,sc);
+  if(standing){
+    ctx.fillStyle='#2a3550';ctx.fillRect(-18,40,15,52);ctx.fillRect(3,40,15,52);
+    ctx.fillStyle='#e8e8e8';ctx.fillRect(-20,88,19,6);ctx.fillRect(2,88,19,6);
+  }
+  var bot=standing?44:16;
+  ctx.fillStyle=s.shirt;
+  ctx.beginPath();ctx.moveTo(-36,topY+8);ctx.quadraticCurveTo(-36,topY,-26,topY);ctx.lineTo(26,topY);ctx.quadraticCurveTo(36,topY,36,topY+8);ctx.lineTo(40,bot);ctx.lineTo(-40,bot);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle=s.skin;ctx.fillRect(-6,topY-9,12,12);
+  ctx.beginPath();ctx.moveTo(-8,topY);ctx.lineTo(8,topY);ctx.lineTo(0,topY+12);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#2c4f86';ctx.fillRect(-26,topY+16,16,5);
+  if(standing){
+    ctx.fillStyle=s.shirt;ctx.fillRect(-46,topY+4,11,46);ctx.fillRect(35,topY+4,11,46);
+    ctx.strokeRect(-46,topY+4,11,46);ctx.strokeRect(35,topY+4,11,46);
+    ctx.fillStyle=s.skin;ctx.beginPath();ctx.arc(-40.5,topY+54,6,0,TAU);ctx.arc(40.5,topY+54,6,0,TAU);ctx.fill();
+  }
+  if(!sleep){
+    ctx.save();
+    var hx=0,hyy=hy,rot=Math.sin(t*.9+s.i)*.03;
+    if(m==='phone'){hyy+=5;rot=.1;}
+    if(m==='note'||m==='chat'){hx=dir*5;rot=dir*.16;}
+    ctx.translate(hx,hyy);ctx.rotate(rot);drawHead(s,m,t);ctx.restore();
+    if(m==='nose'||m==='eat'){
+      var ex=m==='nose'?6:9,ey2=hy+ry*(m==='nose'?.45:.68)+Math.sin(t*10)*1.5;
+      ctx.strokeStyle=s.shirt;ctx.lineWidth=11;ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.beginPath();ctx.moveTo(32,topY+10);ctx.lineTo(28,topY-10);ctx.lineTo(ex+8,ey2+4);ctx.stroke();
+      ctx.lineCap='butt';ctx.lineJoin='miter';
+      ctx.fillStyle=s.skin;ctx.beginPath();ctx.arc(ex,ey2,5,0,TAU);ctx.fill();
+      if(m==='eat'){
+        ctx.fillStyle='#f6ecd2';ctx.strokeStyle='#c8b98e';ctx.lineWidth=1;
+        ctx.beginPath();ctx.arc(ex+5,ey2+3,9,0,TAU);ctx.fill();ctx.stroke();
+        ctx.beginPath();ctx.moveTo(ex+1,ey2-2);ctx.lineTo(ex+5,ey2+3);ctx.lineTo(ex+9,ey2-2);ctx.stroke();
+      }
+    }
+  }
+  drawDesk(s);
+  if(sleep){
+    ctx.save();ctx.translate(4,-6);ctx.rotate(dir*.1);drawHead(s,m,t);ctx.restore();
+    ctx.fillStyle=s.shirt;ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=1;
+    ctx.beginPath();(ctx.roundRect||ctx.rect).call(ctx,-38,8,76,15,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle=s.skin;ctx.beginPath();ctx.ellipse(-38,16,5,5,0,0,TAU);ctx.ellipse(38,16,5,5,0,0,TAU);ctx.fill();
+  }else if(m==='phone'){
+    ctx.fillStyle='rgba(143,227,255,.35)';ctx.beginPath();ctx.ellipse(0,16,28,9,0,0,TAU);ctx.fill();
+    ctx.fillStyle='#1b1b1f';ctx.fillRect(-8,6,16,24);
+    ctx.fillStyle='#8fe3ff';ctx.fillRect(-6,8,12,18);
+    ctx.fillStyle=s.skin;ctx.beginPath();ctx.ellipse(-11,24,5,4,0,0,TAU);ctx.ellipse(11,24,5,4,0,0,TAU);ctx.fill();
+  }else{
+    ctx.fillStyle='#2f6db0';ctx.beginPath();ctx.moveTo(-36,12);ctx.lineTo(-6,12);ctx.lineTo(-4,25);ctx.lineTo(-38,25);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#f4f1e6';ctx.fillRect(-38,25,34,3);
+    ctx.fillStyle='#f08aa8';ctx.fillRect(22,14,24,9);
+    ctx.fillStyle=s.skin;
+    if(m==='note'){
+      ctx.save();ctx.translate(dir*26,17);ctx.rotate(dir*.4);ctx.fillStyle='#fff';ctx.fillRect(-8,-6,16,12);ctx.strokeStyle='#8aa';ctx.lineWidth=1;ctx.strokeRect(-8,-6,16,12);ctx.restore();
+      ctx.fillStyle=s.skin;ctx.beginPath();ctx.ellipse(dir*14,21,5,4,0,0,TAU);ctx.fill();
+    }else if(!standing){
+      ctx.beginPath();ctx.ellipse(-14,20,6,4,0,0,TAU);if(m!=='nose'&&m!=='eat')ctx.ellipse(14,20,6,4,0,0,TAU);ctx.fill();
+    }
+  }
+  var top=hy-ry-(s.hairStyle===1||s.hairStyle===4?26:14),bot2=standing?96:66;
+  if(sel){
+    ctx.strokeStyle='#f4d35e';ctx.lineWidth=3.5;ctx.setLineDash([8,5]);ctx.lineDashOffset=-t*24;
+    ctx.beginPath();(ctx.roundRect||ctx.rect).call(ctx,-66,top,132,bot2-top,10);ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.restore();
+  var hts=y+top*sc;
+  if(sleep){
+    for(var z=0;z<3;z++){
+      var ph=(t*.8+z/3)%1;
+      ctx.globalAlpha=1-ph;ctx.fillStyle='#fff';ctx.strokeStyle='#245';ctx.lineWidth=2;
+      ctx.font='bold '+((11+z*3)*sc+3)+'px sans-serif';ctx.textAlign='center';
+      var zx=x+26*sc+ph*18,zy=y-34*sc-ph*34*sc;
+      ctx.strokeText('Z',zx,zy);ctx.fillText('Z',zx,zy);
+    }
+    ctx.globalAlpha=1;
+  }
+  if(m==='chat'){bubble('…',x+dir*28*sc,hts+6,'#fff');}
+  var by=hts-4;
+  if(sel){
+    pill(s.name+'（'+MOOD_NAME[m]+'）',x,by);
+    by-=26;
+  }
+  if(s.bubble&&s.bubble.until>t){bubble(s.bubble.text,x,by,'#fff');}
+}
+
+function pill(text,x,y){
+  ctx.font='bold 12px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  var w=ctx.measureText(text).width+14;x=Math.max(w/2+3,Math.min(W-w/2-3,x));
+  ctx.fillStyle='#f4d35e';ctx.beginPath();(ctx.roundRect||ctx.rect).call(ctx,x-w/2,y-18,w,20,10);ctx.fill();
+  ctx.fillStyle='#2a2410';ctx.fillText(text,x,y-8);ctx.textBaseline='alphabetic';
+}
+function bubble(text,x,y,fill){
+  ctx.font='bold 13px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  var w=ctx.measureText(text).width+18,h=24,bx=Math.max(w/2+3,Math.min(W-w/2-3,x)),by=Math.max(h+2,y);
+  ctx.fillStyle=fill;ctx.strokeStyle='#333';ctx.lineWidth=1.5;
+  ctx.beginPath();(ctx.roundRect||ctx.rect).call(ctx,bx-w/2,by-h-6,w,h,9);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-5,by-6);ctx.lineTo(x,by+1);ctx.lineTo(x+5,by-6);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#222';ctx.fillText(text,bx,by-6-h/2+1);ctx.textBaseline='alphabetic';
+}
+
+/* ---------- room (pre-rendered) ---------- */
+function buildRoom(){
+  var c=document.createElement('canvas');c.width=W;c.height=H;
+  var g=c.getContext('2d'),i;
+  g.fillStyle='#dfe6d3';g.fillRect(0,0,W,190);
+  g.fillStyle='#a9bfa4';g.fillRect(0,150,W,40);
+  g.fillStyle='#8fa68b';g.fillRect(0,148,W,4);
+  g.fillStyle='#efeadb';g.fillRect(0,0,W,26);
+  g.fillStyle='#fffbe9';g.fillRect(150,8,170,10);g.fillRect(480,8,170,10);
+  g.fillStyle='rgba(255,251,233,.25)';g.fillRect(140,18,190,26);g.fillRect(470,18,190,26);
+  var fl=g.createLinearGradient(0,190,0,H);fl.addColorStop(0,'#c9a36e');fl.addColorStop(1,'#a98557');
+  g.fillStyle=fl;g.fillRect(0,190,W,H-190);
+  g.strokeStyle='rgba(120,85,45,.45)';g.lineWidth=1.5;
+  [198,210,226,248,280,320,372,432].forEach(function(y){g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();});
+  g.fillStyle='rgba(60,40,20,.25)';g.fillRect(0,186,W,6);
+  // window
+  g.fillStyle='#8e8f86';g.fillRect(22,38,174,122);
+  var sky=g.createLinearGradient(0,44,0,154);sky.addColorStop(0,'#a9dcf5');sky.addColorStop(1,'#e8f6fb');
+  g.fillStyle=sky;g.fillRect(28,44,162,110);
+  g.fillStyle='#fff';g.beginPath();g.ellipse(70,80,22,9,0,0,TAU);g.ellipse(88,76,16,8,0,0,TAU);g.fill();
+  g.fillStyle='#8e8f86';g.fillRect(107,44,6,110);
+  g.fillStyle='rgba(243,239,226,.95)';
+  for(i=0;i<5;i++)g.fillRect(28,44+i*9,162,6);
+  g.fillStyle='#6e6f68';g.fillRect(28,92,162,3);
+  // loudspeaker
+  g.fillStyle='#8b8d86';g.fillRect(222,32,34,24);g.fillStyle='#5f615b';
+  for(i=0;i<4;i++)g.fillRect(226,36+i*5,26,2);
+  // motto banner
+  g.fillStyle='#c9382b';g.fillRect(455,38,214,52);
+  g.strokeStyle='#f0c24b';g.lineWidth=3;g.strokeRect(459,42,206,44);
+  g.fillStyle='#f6d36b';g.font='900 28px "Noto Serif TC",serif';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('勤 學 守 禮',562,65);
+  // bulletin board
+  g.fillStyle='#b98a55';g.fillRect(690,34,96,104);g.strokeStyle='#7a5230';g.lineWidth=4;g.strokeRect(690,34,96,104);
+  g.fillStyle='#fff';g.fillRect(698,42,38,34);g.fillStyle='#f6a6b8';g.fillRect(742,44,36,26);
+  g.fillStyle='#bfe3f5';g.fillRect(700,82,34,46);g.fillStyle='#f4d35e';g.fillRect(742,78,36,50);
+  g.fillStyle='#c9382b';g.font='bold 11px "Noto Sans TC",sans-serif';
+  g.fillText('段考',717,53);g.fillText('倒數',717,66);
+  g.font='bold 13px "Noto Sans TC",sans-serif';g.fillText('12天',760,104);
+  g.fillStyle='#333';g.font='10px "Noto Sans TC",sans-serif';g.fillText('值日生',717,105);
+  g.textBaseline='alphabetic';
+  return c;
+}
+var ROOM=null;
+function drawClock(minTotal){
+  var cx=395,cy=68;
+  ctx.fillStyle='#2b2b2b';ctx.beginPath();ctx.arc(cx,cy,30,0,TAU);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,27,0,TAU);ctx.fill();
+  ctx.strokeStyle='#333';ctx.lineWidth=1.5;
+  for(var k=0;k<12;k++){var a=k/12*TAU;ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*22,cy+Math.sin(a)*22);ctx.lineTo(cx+Math.cos(a)*25,cy+Math.sin(a)*25);ctx.stroke();}
+  var mm=minTotal%60,hh=(minTotal/60)%12;
+  var am=mm/60*TAU-Math.PI/2,ah=(hh+mm/60)/12*TAU-Math.PI/2;
+  ctx.lineCap='round';
+  ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(ah)*14,cy+Math.sin(ah)*14);ctx.stroke();
+  ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(am)*21,cy+Math.sin(am)*21);ctx.stroke();
+  ctx.lineCap='butt';
+  ctx.fillStyle='#c9382b';ctx.beginPath();ctx.arc(cx,cy,2,0,TAU);ctx.fill();
+}
+
+/* ---------- podium + teacher's hands ---------- */
+function drawFront(t,anim){
+  var lift=0,wig=0,slam=0;
+  if(anim){
+    var k=t-anim.t0;
+    if(anim.type==='teach'&&k<.5){wig=Math.sin(k*30)*12;lift=18;}
+    if(anim.type==='bang'&&k<.4){lift=k<.12?46:0;slam=k>=.12?1:0;}
+    if(anim.type==='tea'&&k<1.1){lift=Math.min(60,k*140)*(k<.8?1:(1.1-k)/.3);}
+  }
+  var c;
+  // thermos
+  ctx.fillStyle='#9aa6ad';ctx.fillRect(48,380,28,50);ctx.fillStyle='#c6d0d6';ctx.fillRect(52,382,6,46);
+  ctx.fillStyle='#2c3a46';ctx.fillRect(46,372,32,10);ctx.fillRect(76,384,6,18);
+  // chalk box
+  ctx.fillStyle='#e8e0c8';ctx.fillRect(170,418,46,12);
+  ['#fff','#f4d35e','#f59fb3','#8fd3f4'].forEach(function(col,i){ctx.fillStyle=col;ctx.fillRect(174+i*10,412,7,8);});
+  // homework stack
+  ['#d9d2bd','#e3a9a1','#a9c3e3','#d9d2bd'].forEach(function(col,i){ctx.fillStyle=col;ctx.fillRect(660+(i%2)*3,418-i*8,72,9);});
+  ctx.fillStyle='#c9382b';ctx.fillRect(742,404,5,26);
+  // ledge + body
+  ctx.fillStyle='#7a5230';ctx.fillRect(0,428,W,16);
+  ctx.fillStyle='#8c6240';ctx.fillRect(0,428,W,4);
+  ctx.fillStyle='#5a3b20';ctx.fillRect(0,444,W,36);
+  // teacher's sleeves and hands
+  var ly=444-(slam?0:lift*.2),ry=444-lift-(anim&&anim.type==='teach'?8:0);
+  function sleeve(x,y,rot){
+    ctx.save();ctx.translate(x,y);ctx.rotate(rot);
+    ctx.fillStyle='#59688a';ctx.fillRect(-26,0,52,60);
+    ctx.fillStyle='#f4f1e8';ctx.fillRect(-26,-4,52,8);
+    ctx.fillStyle='#e8b98f';ctx.beginPath();ctx.ellipse(0,-12,19,15,0,0,TAU);ctx.fill();
+    ctx.strokeStyle='rgba(60,30,10,.4)';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.restore();
+  }
+  sleeve(340,ly+4,-.05);
+  sleeve(460+wig,ry+4,.05);
+  // chalk in right hand
+  ctx.fillStyle='#fff';ctx.save();ctx.translate(460+wig,ry-22);ctx.rotate(-.5);ctx.fillRect(-2,-12,5,22);ctx.restore();
+  if(anim&&anim.type==='tea'&&t-anim.t0<1.1){
+    ctx.fillStyle='rgba(255,255,255,.6)';
+    for(var s=0;s<3;s++){ctx.beginPath();ctx.arc(72+Math.sin(t*5+s)*3,364-s*9-((t*20)%9),2.5,0,TAU);ctx.fill();}
+  }
+}
+
+/* ---------- game state ---------- */
+var CLASS_SEC=240;
+var COOL={teach:.8,bang:4,ask:2.5,chalk:3,stand:5,tea:7,scold:3.5};
+var ORDER=['teach','bang','ask','chalk','stand','tea','scold'];
+var MISB=['sleep','phone','note','nose','eat','chat'];
+var students=makeStudents();
+var S={phase:'title',t:0,elapsed:0,progress:0,bp:12,voice:100,complaints:0,sel:-1,cd:{},anim:null,
+  floats:[],chalk:null,shake:0,inspect:null,inspectTimes:[],nextEvent:12,toilet:0,acc:0};
+var $=function(id){return document.getElementById(id);};
+
+var QA=[
+  {q:'台灣最高的山是哪一座？',dumb:['阿里山。','便利商店。','呃…山？'],right:'玉山。'},
+  {q:'3 加 5 等於多少？',dumb:['35。','我沒有帶計算機。','八…個手指？'],right:'8。'},
+  {q:'水的化學式是什麼？',dumb:['水水。','H…O…K？','冰的。'],right:'H2O。'},
+  {q:'「床前明月光」是誰寫的？',dumb:['老師你吧？','周杰倫。','隔壁班的。'],right:'李白。'},
+  {q:'一年有幾個月？',dumb:['十三個。','看有沒有閏月。','每個月都一樣多？'],right:'十二個。'},
+  {q:'光合作用需要什麼？',dumb:['Wi-Fi。','太陽能板。','便當。'],right:'陽光、水和二氧化碳。'},
+  {q:'圓周率是多少？',dumb:['派，好吃的那個。','三點…一直一直。','三。'],right:'三點一四一五九。'},
+  {q:'中華民國哪一年成立？',dumb:['去年。','我生日那天。','月考之前。'],right:'一九一二年。'}
+];
+var SCOLD=['「你是來學校睡覺的嗎？」','「腦袋裡裝漿糊嗎！」','「我講這麼多遍，你耳朵借別人用了？」','「你爸媽花錢是讓你來玩的？」','「再這樣我叫你家長來！」','「下課給我留下來！」','「你這樣段考要怎麼辦？」'];
+var SORRY=['對不起…','我知道錯了','嗚…','我下次不敢了','老師我有在聽啊'];
+var TEACH_LINES=['「這題很重要，會考！」','「看黑板，不要看窗外。」','「這裡我上次講過了。」','「有問題的同學舉手。」','「聽不懂就是沒在聽。」'];
+
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function say(m){$('log').textContent=m;}
+function hint(m){$('hint').textContent=m;}
+function floatText(x,y,text,color){S.floats.push({x:x,y:y,text:text,color:color||'#fff',t0:S.t});}
+function misCount(){var n=0;students.forEach(function(s){if(MISB.indexOf(s.mood)>=0)n++;});return n;}
+function avgAtt(){var a=0;students.forEach(function(s){a+=s.att;});return a/students.length;}
+function sx(s){return seatX(s);}
+function sy(s){return ROWY[s.row]-55*ROWS[s.row];}
+
+function reset(){
+  students=makeStudents();
+  S.phase='play';S.t=S.t;S.elapsed=0;S.progress=0;S.bp=12;S.voice=100;S.complaints=0;S.sel=-1;S.cd={};
+  S.anim=null;S.floats=[];S.chalk=null;S.shake=0;S.inspect=null;S.nextEvent=10+Math.random()*5;S.toilet=0;S.acc=0;
+  S.inspectTimes=[55+Math.random()*15,125+Math.random()*20,190+Math.random()*20];
+  $('banner').hidden=true;$('start').hidden=true;$('end').hidden=true;$('report').hidden=true;
+  say('上課鐘響了。45 分鐘內把第 6 章教完。');
+  hint('先點一位同學，再用點名、丟粉筆、罰站或罵人；不選人就是罵全班。');
+}
+
+/* ---------- per-half-second simulation ---------- */
+function startMisbehave(s){
+  var r=Math.random(),m=r<.3?'sleep':r<.55?'phone':r<.67?'note':r<.79?'nose':r<.9?'eat':'chat';
+  s.mood=m;s.att=Math.min(s.att,25);
+}
+function step(){
+  var mis=0;
+  students.forEach(function(s){
+    if(s.mood==='idle'){
+      s.att-=(.5+Math.random()*.9)*s.drift*.7*(S.inspect?.2:1)*.5;
+      if(s.att<32&&Math.random()<.3)startMisbehave(s);
+    }else if(s.mood==='stand'||s.mood==='answering'){
+      if(S.elapsed>s.until){s.mood='idle';s.att=Math.max(s.att,55);}
+    }else{
+      s.att=Math.min(s.att,25);mis++;
+      if(s.mood!=='sleep'&&Math.random()<.01){s.mood='idle';s.att=45;}
+    }
+  });
+  S.bp=clamp(S.bp+(mis?mis*2/students.length:-.15),0,100);
+  S.voice=Math.min(100,S.voice+.5);
+  if(S.elapsed>S.nextEvent&&!S.inspect){flavor();S.nextEvent=S.elapsed+9+Math.random()*8;}
+  if(S.inspectTimes.length&&S.elapsed>=S.inspectTimes[0]){
+    S.inspectTimes.shift();S.inspect={end:S.elapsed+6};
+    say('教務主任出現在後門窗口，正在往教室裡看。');
+  }
+  if(S.inspect&&S.elapsed>=S.inspect.end){
+    S.inspect=null;$('banner').hidden=true;
+    var m2=misCount();
+    if(m2<=2){S.bp=Math.max(0,S.bp-8);say('主任點點頭走了。你鬆了一口氣。');}
+    else{S.bp=Math.min(100,S.bp+14);say('主任：「你們班怎麼回事？」（'+m2+' 人沒在聽，血壓上升）');}
+  }
+}
+function flavor(){
+  var s=pick(students),r=Math.random();
+  if(r<.2){S.toilet++;say(s.name+'舉手：「老師，可以去廁所嗎？」（今天第 '+S.toilet+' 次）');S.bp=Math.min(100,S.bp+1);}
+  else if(r<.4){say(s.name+'問：「老師，這會考嗎？」');}
+  else if(r<.55){say(s.name+'的便當盒掉到地上，全班回頭。');students.forEach(function(x){if(x.mood==='idle')x.att=Math.max(0,x.att-5);});}
+  else if(r<.7){say(s.name+'說：「老師我沒帶課本。」');S.bp=Math.min(100,S.bp+2);}
+  else if(r<.85){say('隔壁班傳來一陣大笑，全班都分心了。');students.forEach(function(x){if(x.mood==='idle')x.att=Math.max(0,x.att-8);});}
+  else{say(s.name+'把橡皮擦吃掉了。');S.bp=Math.min(100,S.bp+2);}
+}
+
+/* ---------- actions ---------- */
+function act(a){
+  if(S.phase!=='play'||(S.cd[a]||0)>0)return;
+  var s=S.sel>=0?students[S.sel]:null;
+  if((a==='ask'||a==='chalk'||a==='stand')&&!s){hint('先點一位同學，再用這招。');return;}
+  if(a==='teach'){
+    var hoarse=S.voice<12,gain=1.3*(.3+.7*avgAtt()/100)*(hoarse?.45:1);
+    S.progress=Math.min(100,S.progress+gain);S.voice=Math.max(0,S.voice-3.2);
+    students.forEach(function(x){if(x.mood==='idle'){x.att=Math.min(100,x.att+1);x.learn+=(x.att/100)*x.iq*(hoarse?.5:1);}});
+    S.anim={type:'teach',t0:S.t};
+    floatText(440,400,'+'+gain.toFixed(1)+'%','#f4d35e');
+    if(hoarse&&Math.random()<.35)say('嗓子沙啞了，快喝口茶。');
+    else if(Math.random()<.15)say('你說：'+pick(TEACH_LINES));
+    if(S.progress>=100){finish('done');return;}
+  }else if(a==='bang'){
+    S.shake=.35;S.anim={type:'bang',t0:S.t};
+    students.forEach(function(x){
+      if(x.mood==='idle')x.att=Math.min(100,x.att+16);
+      else if(MISB.indexOf(x.mood)>=0&&(S.inspect||Math.random()<.55)){x.mood='idle';x.att=50;}
+    });
+    S.bp=Math.min(100,S.bp+.8);say('「安靜！」講桌被你敲得啪一聲，全班抬頭。');
+  }else if(a==='ask'){
+    var was=MISB.indexOf(s.mood)>=0,q=pick(QA),ok=Math.random()<.06,txt;
+    if(was)txt='（嚇醒）蛤？';else if(ok)txt=q.right;else txt=pick(q.dumb);
+    s.mood='answering';s.until=S.elapsed+3.2;s.bubble={text:txt,until:S.t+3.2};
+    if(ok){S.bp=Math.max(0,S.bp-6);s.learn+=2;say('你問'+s.name+'：「'+q.q+'」他居然答對了！血壓下降。');}
+    else{S.bp=Math.min(100,S.bp+3+(was?2:0));say('你問'+s.name+'：「'+q.q+'」他回答：「'+txt+'」');}
+    students.forEach(function(x){if(x.mood==='idle')x.att=Math.min(100,x.att+6);});
+  }else if(a==='chalk'){
+    S.chalk={x0:480,y0:420,x1:sx(s),y1:sy(s),t0:S.t,dur:.38,id:s.i};
+    S.anim={type:'teach',t0:S.t};
+  }else if(a==='stand'){
+    var guilty=MISB.indexOf(s.mood)>=0;
+    s.mood='stand';s.until=S.elapsed+9;s.att=55;
+    s.bubble={text:guilty?'對不起…':'我又沒怎樣…',until:S.t+2};
+    students.forEach(function(x){if(x.mood==='idle')x.att=Math.min(100,x.att+4);});
+    S.bp=Math.max(0,S.bp-(guilty?1.5:0)+(guilty?0:1));
+    say(s.name+'被叫去站著上課。');
+  }else if(a==='scold'){
+    S.voice=Math.max(0,S.voice-(s?8:15));S.shake=.25;S.anim={type:'bang',t0:S.t};
+    var line=pick(SCOLD);
+    floatText(400,398,s?'罵！':'全班給我安靜！','#f0725a');
+    if(s){
+      var bad=MISB.indexOf(s.mood)>=0;
+      s.bubble={text:pick(SORRY),until:S.t+2.5};
+      if(bad){
+        s.mood='idle';s.att=70;S.bp=Math.max(0,S.bp-3);
+        students.forEach(function(x){if(x!==s&&x.mood==='idle')x.att=Math.min(100,x.att+3);});
+        say('你罵'+s.name+'：'+line+'他縮了縮脖子，坐正了。');
+      }else{
+        s.att=Math.max(0,s.att-8);S.bp=Math.min(100,S.bp+2);
+        if(Math.random()<.5){S.complaints++;floatText(sx(s),sy(s)-20,'投訴 +1','#f0725a');say('你罵了認真聽課的'+s.name+'，他回家哭著告訴爸媽。家長投訴 +1。');if(S.complaints>=3)finish('complaint');}
+        else say('你罵了沒犯錯的'+s.name+'。他一臉委屈，大家都在看你。');
+      }
+    }else{
+      var fixed=0,bad2=misCount();
+      students.forEach(function(x){
+        if(MISB.indexOf(x.mood)>=0&&Math.random()<.5){x.mood='idle';x.att=55;fixed++;}
+        else if(x.mood==='idle')x.att=Math.min(100,x.att+(bad2?12:-4));
+      });
+      if(bad2){S.bp=Math.max(0,S.bp-3);say('你對全班吼：'+line+'有 '+fixed+' 個人立刻坐好。');}
+      else{S.bp=Math.min(100,S.bp+1.5);say('全班都在乖乖聽課，你卻突然罵人，大家一臉困惑。');}
+    }
+  }else if(a==='tea'){
+    S.voice=Math.min(100,S.voice+38);S.bp=Math.max(0,S.bp-3);S.anim={type:'tea',t0:S.t};
+    say('你喝了一口保溫杯裡的枸杞茶，感覺好多了。');
+  }
+  S.cd[a]=COOL[a];
+}
+function chalkHit(id){
+  var s=students[id];
+  if(MISB.indexOf(s.mood)>=0){
+    s.mood='idle';s.att=60;S.bp=Math.max(0,S.bp-2);
+    floatText(sx(s),sy(s)-20,'醒了！','#a8e6a1');say(s.name+'被粉筆命中，當場清醒。');
+  }else{
+    S.complaints++;s.att=Math.max(0,s.att-15);S.bp=Math.min(100,S.bp+3);
+    s.bubble={text:'老師你亂丟！',until:S.t+2.5};
+    floatText(sx(s),sy(s)-20,'投訴 +1','#f0725a');
+    say('你砸到了認真聽課的'+s.name+'。家長投訴 +1。');
+    if(S.complaints>=3)finish('complaint');
+  }
+}
+
+/* ---------- ending ---------- */
+var COMMENTS=[[15,'考卷只寫了名字，還寫錯一個字。'],[30,'選擇題全部猜 C。'],[45,'有寫，但寫的是別科的答案。'],[60,'矇對了幾題，運氣很好。'],[75,'居然及格，大家都很驚訝。'],[101,'請調查他是不是抄到了對的人。']];
+function finish(reason){
+  if(S.phase!=='play')return;
+  S.phase='ended';$('banner').hidden=true;
+  var tot=0,rows=$('rows');rows.innerHTML='';
+  students.forEach(function(s){
+    var sc=Math.round(clamp(6+s.learn*2+(Math.random()-.5)*10,0,100));tot+=sc;
+    var cm=COMMENTS.filter(function(c){return sc<c[0];})[0][1];
+    var col=sc<30?'var(--red)':sc<60?'var(--yellow)':'var(--green)';
+    var d=document.createElement('div');d.className='row';d.style.setProperty('--c',col);
+    d.innerHTML='<span class="nm"></span><span class="tr"><i style="width:'+sc+'%"></i></span><span class="sc">'+sc+'</span><span class="cm"></span>';
+    d.querySelector('.nm').textContent=s.name;d.querySelector('.cm').textContent=cm;
+    rows.appendChild(d);
+  });
+  var avg=Math.round(tot/students.length),pct=Math.floor(S.progress);
+  var T={done:['進度教完了！','第 6 章提前教完，而且你還站得住。'],
+    bell:['下課鐘響了','進度停在 '+pct+'%，剩下的下週補。'],
+    bp:['你氣到請病假','血壓破表，代課老師已經在路上。'],
+    complaint:['家長打電話到教育局','第三通投訴進來，你被約談了。']}[reason];
+  $('end-title').textContent=T[0];$('end-sub').textContent=T[1];
+  $('end-avg').textContent='小考全班平均 '+avg+' 分。'+(avg>=60?'奇蹟。':avg>=40?'在預期之內。':'你到底教了什麼？');
+  $('end').hidden=false;$('report').hidden=false;
+}
+
+/* ---------- input ---------- */
+function setSel(i){
+  S.sel=i;
+  if(i<0){hint('先點一位同學，再用點名、丟粉筆、罰站或罵人；不選人就是罵全班。');return;}
+  var s=students[i];hint('已選 '+s.name+'：'+MOOD_NAME[s.mood]+'。');
+}
+function pickStudent(e){
+  var r=cv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W,py=(e.clientY-r.top)/r.height*H,i;
+  for(i=students.length-1;i>=0;i--){
+    var s=students[i],sc=ROWS[s.row],st=(s.mood==='stand'||s.mood==='answering');
+    var x0=seatX(s)-62*sc,x1=seatX(s)+62*sc,y0=ROWY[s.row]+(st?-126:-96)*sc,y1=ROWY[s.row]+66*sc;
+    if(px>=x0&&px<=x1&&py>=y0&&py<=y1)return i;
+  }
+  return -1;
+}
+cv.addEventListener('click',function(e){
+  if(S.phase==='ended')return;
+  var i=pickStudent(e);setSel(i===S.sel?-1:i);
+});
+document.getElementById('tray').addEventListener('click',function(e){
+  var b=e.target.closest('.act');if(b)act(b.getAttribute('data-a'));
+});
+document.addEventListener('keydown',function(e){
+  if(S.phase!=='play')return;
+  var n=parseInt(e.key,10);
+  if(n>=1&&n<=7){act(ORDER[n-1]);}
+  else if(e.key===' '&&document.activeElement===document.body){e.preventDefault();act('teach');}
+});
+$('start-btn').addEventListener('click',reset);
+$('again-btn').addEventListener('click',reset);
+$('see-report').addEventListener('click',function(){$('report').scrollIntoView({behavior:'smooth',block:'start'});});
+
+/* ---------- HUD + render ---------- */
+function hud(){
+  var left=Math.max(0,CLASS_SEC-S.elapsed),mins=Math.ceil(left/CLASS_SEC*45);
+  var order=Math.round(100*(1-misCount()/students.length));
+  function set(k,v,p){$('v-'+k).textContent=v;$('b-'+k).style.width=clamp(p,0,100)+'%';}
+  set('progress',Math.floor(S.progress)+'%',S.progress);
+  set('order',order,order);
+  set('bp',Math.round(S.bp),S.bp);
+  set('voice',Math.round(S.voice),S.voice);
+  set('time',mins+' 分',left/CLASS_SEC*100);
+  document.querySelector('.stat[data-k=bp]').classList.toggle('hot',S.bp>70);
+  $('complaints').textContent='家長投訴 '+S.complaints+' / 3';
+  var btns=document.querySelectorAll('.act');
+  for(var i=0;i<btns.length;i++){var a=btns[i].getAttribute('data-a');btns[i].style.setProperty('--cd',clamp((S.cd[a]||0)/COOL[a],0,1));}
+}
+function render(){
+  var t=S.t;
+  ctx.save();
+  if(S.shake>0){var f=S.shake/.35*4;ctx.translate((Math.random()-.5)*f*2,(Math.random()-.5)*f*2);}
+  ctx.drawImage(ROOM,0,0);
+  drawClock(10*60+10+S.elapsed*(45/CLASS_SEC));
+  for(var i=0;i<students.length;i++)drawStudent(students[i],t,i===S.sel&&S.phase==='play');
+  drawFront(t,S.anim);
+  if(S.chalk){
+    var c=S.chalk,k=(t-c.t0)/c.dur;
+    if(k>=1){var id=c.id;S.chalk=null;chalkHit(id);}
+    else{
+      var cx=c.x0+(c.x1-c.x0)*k,cy=c.y0+(c.y1-c.y0)*k-Math.sin(k*Math.PI)*60;
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(k*14);ctx.fillStyle='#fff';ctx.strokeStyle='#999';ctx.lineWidth=1;
+      ctx.fillRect(-2,-9,5,18);ctx.strokeRect(-2,-9,5,18);ctx.restore();
+    }
+  }
+  S.floats=S.floats.filter(function(f){return t-f.t0<1.2;});
+  S.floats.forEach(function(f){
+    var k=(t-f.t0)/1.2;
+    ctx.globalAlpha=1-k;ctx.font='800 17px "Noto Sans TC",sans-serif';ctx.textAlign='center';
+    ctx.lineWidth=4;ctx.strokeStyle='#1c342d';ctx.strokeText(f.text,f.x,f.y-k*36);
+    ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y-k*36);ctx.globalAlpha=1;
+  });
+  ctx.restore();
+}
+
+/* ---------- main loop ---------- */
+var last=performance.now();
+function frame(now){
+  var dt=Math.min(.1,(now-last)/1000);last=now;S.t+=dt;
+  if(S.shake>0)S.shake-=dt;
+  if(S.phase==='play'){
+    S.elapsed+=dt;S.acc+=dt;
+    while(S.acc>=.5&&S.phase==='play'){S.acc-=.5;step();}
+    for(var a in COOL){if(S.cd[a]>0)S.cd[a]=Math.max(0,S.cd[a]-dt);}
+    if(S.inspect){
+      var b=$('banner');b.hidden=false;
+      b.textContent='主任在後門窗口！'+Math.ceil(S.inspect.end-S.elapsed)+' 秒內讓全班坐好（敲講桌最快）';
+    }
+    if(S.phase==='play'){
+      if(S.bp>=100)finish('bp');
+      else if(S.elapsed>=CLASS_SEC)finish('bell');
+    }
+  }
+  hud();render();
+  requestAnimationFrame(frame);
+}
+ROOM=buildRoom();requestAnimationFrame(frame);
+if(document.fonts&&document.fonts.load){
+  Promise.all([document.fonts.load('900 28px "Noto Serif TC"','勤學守禮'),document.fonts.load('bold 13px "Noto Sans TC"','段考倒數')])
+    .then(function(){ROOM=buildRoom();},function(){});
+}
+})();
+</script>
+
+</body></html>

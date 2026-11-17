@@ -1,0 +1,404 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>偷一顆蛋</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* 版面：單欄遊戲機。上方計分列、中間畫布、下方操作說明。深色夜晚農場為刻意的單一主題。 */
+:root {
+  --night: #101a1a;
+  --night-2: #182624;
+  --ink: #f3efe2;
+  --ink-dim: #93a39c;
+  --egg: #fff0cf;
+  --comb: #e5533d;
+  --fox: #f09a3e;
+  --line: #2b413d;
+  --font-display: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-num: "Space Grotesk", "Noto Sans TC", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--night); color: var(--ink); font-family: var(--font-display);
+  padding-block: 20px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; justify-content: center;
+}
+.wrap { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+header { display: flex; justify-content: space-between; align-items: end; gap: 12px; }
+h1 { margin: 0; font-size: 1.6rem; font-weight: 900; letter-spacing: .06em; }
+.stats { display: flex; gap: 16px; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.stat { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.stat small { font-family: var(--font-display); font-size: .68rem; letter-spacing: .12em; color: var(--ink-dim); }
+.stat b { font-size: 1.35rem; font-weight: 700; }
+.lives { color: var(--comb); font-size: 1.1rem; letter-spacing: .12em; }
+.stage { flex: none; position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--night-2); }
+canvas { display: block; width: 100%; height: auto; aspect-ratio: 360 / 560; touch-action: none; user-select: none; -webkit-user-select: none; }
+.overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 24px; text-align: center; background: rgba(16, 26, 26, .82);
+}
+.overlay[hidden], .big[hidden] { display: none !important; }
+.overlay h2 { margin: 0; font-size: 1.9rem; font-weight: 900; text-wrap: balance; }
+.overlay p { margin: 0; color: var(--ink-dim); font-size: .92rem; line-height: 1.7; max-width: 28ch; }
+.big { font-family: var(--font-num); font-size: 2.8rem; font-weight: 700; color: var(--egg); line-height: 1; }
+button {
+  font: inherit; font-weight: 700; font-size: 1rem; padding: 12px 28px; border: 0; border-radius: 4px;
+  background: var(--egg); color: #231c0a; cursor: pointer;
+}
+button:hover { filter: brightness(1.06); }
+button:focus-visible { outline: 3px solid var(--fox); outline-offset: 3px; }
+.coll { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chip { background: var(--night-2); border: 1px solid var(--line); border-radius: 4px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .7rem; color: var(--ink-dim); min-width: 0; text-align: center; }
+.chip canvas { width: 100%; max-width: 64px; height: auto; image-rendering: pixelated; }
+.chip b { color: var(--ink); font-size: .78rem; font-weight: 700; }
+#hold {
+  width: 100%; padding: 18px; font-size: 1.1rem; background: var(--fox); color: #1f1204;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+}
+#hold.down { filter: brightness(.82); }
+.tip { margin: 0; font-size: .8rem; color: var(--ink-dim); line-height: 1.6; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>偷一顆蛋</h1>
+    <div class="stats">
+      <div class="stat"><small>偷到</small><b id="score">0</b></div>
+      <div class="stat"><small>最高</small><b id="best">0</b></div>
+      <div class="stat"><small>機會</small><span class="lives" id="lives">♥♥♥</span></div>
+    </div>
+  </header>
+
+  <div class="stage">
+    <canvas id="c" width="720" height="1120" aria-label="遊戲畫面"></canvas>
+    <div class="overlay" id="ov">
+      <h2 id="ovTitle">烈日當空</h2>
+      <div class="big" id="ovBig" hidden></div>
+      <p id="ovText">巨獸睡著時，按住前進。牠睜眼就立刻放開。偷到蛋，再安靜地帶回藏身洞。</p>
+      <button id="go" type="button">開始偷蛋</button>
+    </div>
+  </div>
+
+  <div class="coll" id="coll" aria-label="寵物圖鑑"></div>
+
+  <button id="hold" type="button">按住前進 · 放開停下</button>
+  <p class="tip">電腦可按住空白鍵或 ↑ / W。放開後小偷會滑一小段，要提早停。「！」是最後警告，但巨獸偶爾會虛驚一場再睡回去。每第 4 顆是金蛋（3 顆），6 秒內來回再 +1。偷越多，巨獸睡得越淺。每顆蛋都會孵化成像素寵物，共六個稀有度：傳說、神話、宇宙、秘密、永恆、神級。蛋上的花紋顏色會洩漏稀有度，金蛋更容易孵出高階。</p>
+</div>
+
+<script>
+(function () {
+  var W = 360, H = 560;
+  var cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  ctx.scale(cv.width / W, cv.height / H);
+  var elScore = document.getElementById('score'), elBest = document.getElementById('best'), elLives = document.getElementById('lives');
+  var ov = document.getElementById('ov'), ovTitle = document.getElementById('ovTitle'), ovBig = document.getElementById('ovBig'),
+      ovText = document.getElementById('ovText'), goBtn = document.getElementById('go'), holdBtn = document.getElementById('hold');
+
+  var START_Y = 500, EGG_Y = 170;
+  var best = 0;
+  try { best = parseInt(localStorage.getItem('egg-best') || '0', 10) || 0; } catch (e) {}
+  elBest.textContent = best;
+
+  var state = 'ready'; // ready | play | over
+  var holding = false, spaceDown = false, ptrDown = false;
+  var fox, hen, score, lives, carrying, shake, msg, msgT, hit, last = performance.now(), clock = 0, golden = false, trip = 0;
+  var hatch = null, coll = {};
+  try { coll = JSON.parse(localStorage.getItem("egg-coll2") || "{}") || {}; } catch (e) { coll = {}; }
+  function setGolden() { golden = (score + 1) % 4 === 0; }
+
+  function level() { return Math.min(score, 12); }
+
+  function reset() {
+    score = 0; lives = 3; carrying = false; shake = 0; msg = ''; msgT = 0; hit = 0;
+    fox = { x: W / 2, y: START_Y, v: 0 }; trip = 0; golden = false;
+    hen = { phase: 'sleep', t: 0, dur: sleepDur() };
+    updateHud();
+  }
+  function sleepDur() { var l = level(); return (1.6 + Math.random() * 1.8) * (1 - l * .045); }
+  function alertDur() { return Math.max(.38, .75 - level() * .03); }
+  function watchDur() { return .9 + Math.random() * .9; }
+
+  function updateHud() {
+    elScore.textContent = score;
+    var h = ''; for (var i = 0; i < 3; i++) h += i < lives ? '♥' : '♡';
+    elLives.textContent = h;
+  }
+
+  var actx = null;
+  function beep(f, d, type, v) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || 'sine'; o.frequency.value = f; g.gain.value = v || .04;
+      g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + d);
+      o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + d);
+    } catch (e) {}
+  }
+  function say(s) { msg = s; msgT = 1.3; }
+
+  function showOverlay(title, text, btn, big) {
+    ovTitle.textContent = title; ovText.textContent = text; goBtn.textContent = btn;
+    if (big != null) { ovBig.hidden = false; ovBig.textContent = big + ' 顆'; } else ovBig.hidden = true;
+    ov.hidden = false; goBtn.focus({ preventScroll: true });
+  }
+  function start() { reset(); state = 'play'; ov.hidden = true; last = performance.now(); beep(440, .1, 'triangle'); }
+  function end() {
+    state = 'over';
+    var nb = score > best;
+    if (nb) { best = score; elBest.textContent = best; try { localStorage.setItem('egg-best', String(best)); } catch (e) {} }
+    showOverlay(nb ? '新紀錄！' : '被逮個正著', nb ? '你是這片沙漠最厲害的小偷。' : '最高紀錄 ' + best + ' 顆，再潛入一次吧。', '再來一次', score);
+    beep(120, .6, 'sawtooth', .06);
+  }
+  goBtn.addEventListener('click', start);
+
+  function setHold() { holding = spaceDown || ptrDown; holdBtn.classList.toggle('down', holding); }
+  window.addEventListener('keydown', function (e) {
+    if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      if (document.activeElement === goBtn && e.key === ' ') return;
+      e.preventDefault(); spaceDown = true; setHold();
+    }
+  });
+  window.addEventListener('keyup', function (e) {
+    if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { spaceDown = false; setHold(); }
+  });
+  window.addEventListener('blur', function () { spaceDown = false; ptrDown = false; setHold(); });
+  function pd(e) { e.preventDefault(); ptrDown = true; try { e.target.setPointerCapture(e.pointerId); } catch (x) {} setHold(); }
+  function pu() { ptrDown = false; setHold(); }
+  [holdBtn, cv].forEach(function (el) {
+    el.addEventListener('pointerdown', pd); el.addEventListener('pointerup', pu); el.addEventListener('pointercancel', pu);
+  });
+
+  function caught() {
+    lives--; shake = .35; hit = .4; carrying = false; fox.y = START_Y; fox.v = 0; trip = 0;
+    say('被發現了！'); beep(150, .3, 'square', .06); updateHud();
+    hen.phase = 'sleep'; hen.t = 0; hen.dur = sleepDur() + .6;
+    if (lives <= 0) end();
+  }
+
+  function update(dt) {
+    clock += dt;
+    hen.t += dt;
+    if (hen.t >= hen.dur) {
+      hen.t = 0;
+      if (hen.phase === 'sleep') { hen.phase = 'alert'; hen.dur = alertDur(); beep(900, .08, 'square', .03); }
+      else if (hen.phase === 'alert') {
+        if (level() >= 2 && Math.random() < .28) { hen.phase = 'sleep'; hen.dur = sleepDur() * .6; beep(500, .1, 'sine', .03); }
+        else { hen.phase = 'watch'; hen.dur = watchDur(); beep(300, .12, 'sawtooth', .04); }
+      }
+      else { hen.phase = 'sleep'; hen.dur = sleepDur(); }
+    }
+    var vmax = carrying ? 130 : 170;
+    if (holding) fox.v = Math.min(vmax, fox.v + 520 * dt);
+    else fox.v = Math.max(0, fox.v - 650 * dt);
+    fox.y += (carrying ? 1 : -1) * fox.v * dt;
+    if (fox.y < START_Y) trip += dt;
+    if (fox.v > 25 && hen.phase === 'watch') { caught(); return; }
+    if (!carrying && fox.y <= EGG_Y + 14) { fox.y = EGG_Y + 14; fox.v = 0; carrying = true; say(golden ? '金蛋到手！' : '拿到了！快回去'); beep(880, .15, 'triangle'); }
+    if (carrying && fox.y >= START_Y) {
+      fox.y = START_Y; fox.v = 0; carrying = false;
+      var wasGold = golden, gain = golden ? 3 : 1, quick = trip < 6;
+      if (quick) gain++;
+      score += gain; trip = 0; setGolden(); updateHud();
+      say('+' + gain + (quick ? ' 快手！' : ' 顆蛋'));
+      beep(660, .1, 'triangle'); setTimeout(function () { beep(990, .15, 'triangle'); }, 100);
+      startHatch(wasGold);
+    }
+    if (shake > 0) shake -= dt; if (hit > 0) hit -= dt; if (msgT > 0) msgT -= dt;
+  }
+
+  var CREATURES = [
+    { id: 'ember', name: '餘燼蟲', rar: '傳說', rc: '#ffd23f', pal: { O: '#e8742b', Y: '#ffd23f', D: '#7a3a14', W: '#ffffff', K: '#222222' }, rows: [
+      '...O....O...', '....O..O....', '..OOOOOOOO..', '.OOWKOOWKOO.', 'OOOOOOOOOOOO', 'OYOYOYOYOYOO', '.OOOOOOOOOO.', '..D.D..D.D..'] },
+    { id: 'cat', name: '黑曜貓', rar: '神話', rc: '#ff7a1a', pal: { B: '#2a2430', R: '#ff4040', G: '#5a4a66' }, rows: [
+      'B..........B', 'BB........BB', 'BBBBBBBBBBBB', 'BBRBBBBBBRBB', 'BBBBBBBBBBBB', '.BBBBGGBBBB.', '..BBBBBBBB..', '..BB....BB..'] },
+    { id: 'spider', name: '星蝕蜘蛛', rar: '宇宙', rc: '#b57bff', pal: { P: '#6b3fb0', W: '#ffffff', S: '#ffe66b' }, rows: [
+      'P..........P', '.P.PPPPPP.P.', '..PPPPPPPP..', 'P.PWPPPPWP.P', '.PPPPSSPPPP.', 'P.PPPPPPPP.P', '.P.PPPPPP.P.', 'P..........P'] },
+    { id: 'owl', name: '夜幕梟', rar: '秘密', rc: '#59e0ff', pal: { B: '#2b2a4a', W: '#ffffff', K: '#222222', Y: '#ffb347' }, rows: [
+      'B..........B', 'BB........BB', 'BBBBBBBBBBBB', 'BWKBBBBBBKWB', 'BBBBBYYBBBBB', 'BBBBBBBBBBBB', '.BBBBBBBBBB.', '..BBBBBBBB..', '...Y....Y...'] },
+    { id: 'turtle', name: '熔核龜', rar: '永恆', rc: '#ff5fa2', pal: { S: '#4a3b3b', L: '#ff7a1a', G: '#7a9a5a', K: '#222222' }, rows: [
+      '....SSSS....', '..SSLSSLSS..', '.SSSSLLSSSS.', 'SSLSSSSSSLSS', 'SSSSSSSSSSSS', 'GGSSSSSSSSGG', 'GKG......GGG', '.G.G....G.G.'] },
+    { id: 'dragon', name: '赤翼龍', rar: '神級', rc: '#ff3a3a', pal: { R: '#e8372c', D: '#8f1a1a', Y: '#ffd23f' }, rows: [
+      'RD............DR', 'RRD....RR....DRR', 'RRRD..RRRR..DRRR', 'RRRRRRYRRYRRRRRR', '.RRRRRRRRRRRRRR.', '..RRRRRDDRRRRR..', '...RRRRRRRRRR...', '....DRRRRRRD....', '.....RR..RR.....', '.....YY..YY.....'] }
+  ];
+  var elColl = document.getElementById('coll');
+  function drawSprite(c, g, x, y, px) {
+    for (var r = 0; r < c.rows.length; r++) for (var q = 0; q < c.rows[r].length; q++) {
+      var ch = c.rows[r][q]; if (ch === '.') continue;
+      g.fillStyle = c.pal[ch]; g.fillRect(Math.round(x + q * px), Math.round(y + r * px), px, px);
+    }
+  }
+  function renderColl() {
+    elColl.innerHTML = '';
+    CREATURES.forEach(function (c) {
+      var n = coll[c.id] || 0;
+      var d = document.createElement('div'); d.className = 'chip';
+      var cv2 = document.createElement('canvas'); cv2.width = 64; cv2.height = 48;
+      var g = cv2.getContext('2d'); g.globalAlpha = n ? 1 : .18;
+      drawSprite(c, g, 32 - c.rows[0].length * 2, 24 - c.rows.length * 2, 4);
+      var b = document.createElement('b'); b.textContent = n ? c.name + ' ×' + n : '？？？';
+      var sp = document.createElement('span'); sp.textContent = c.rar; if (n) sp.style.color = c.rc;
+      d.appendChild(cv2); d.appendChild(b); d.appendChild(sp); elColl.appendChild(d);
+    });
+  }
+  function roll(g) {
+    var w = g ? [10, 25, 25, 20, 14, 6] : [45, 25, 15, 9, 5, 1], r = Math.random() * 100, i = 0;
+    while (i < 5 && r >= w[i]) { r -= w[i]; i++; }
+    return i;
+  }
+  function startHatch(g) {
+    var idx = roll(g), c = CREATURES[idx];
+    hatch = { t: 0, idx: idx, gold: g };
+    coll[c.id] = (coll[c.id] || 0) + 1;
+    try { localStorage.setItem('egg-coll2', JSON.stringify(coll)); } catch (e) {}
+    renderColl(); state = 'hatch'; fox.v = 0;
+    var notes = [523, 587, 659, 784, 880, 1047]; for (var k = 0; k <= idx; k++) (function (f, d) { setTimeout(function () { beep(f, .18, 'triangle', .05); }, 1200 + d); })(notes[k], k * 130);
+  }
+  function drawHatch() {
+    if (state !== 'hatch' || !hatch) return;
+    var h = hatch, c = CREATURES[h.idx];
+    ctx.fillStyle = 'rgba(30,20,10,.76)'; ctx.fillRect(-10, -10, W + 20, H + 20);
+    ctx.textAlign = 'center';
+    if (h.t < 1.2) {
+      ctx.save(); ctx.translate(W / 2, 260); ctx.rotate(Math.sin(h.t * 32) * (.06 + h.t * .14));
+      var sg = golden; golden = h.gold; egg(0, 0, 78, c.rc); golden = sg;
+      if (h.t > .6) { ctx.strokeStyle = '#3b2a14'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-20, -30); ctx.lineTo(-6, -14); ctx.lineTo(-22, 0); ctx.lineTo(0, 16); ctx.stroke(); }
+      ctx.restore();
+      ctx.fillStyle = '#fff6df'; ctx.font = '900 20px "Noto Sans TC", sans-serif'; ctx.fillText('孵化中…', W / 2, 400);
+    } else {
+      var k = h.t - 1.2, s = Math.min(1, .4 + k * 2.4), px = 10;
+      ctx.fillStyle = 'rgba(255,255,255,' + Math.max(0, 1 - k * 3) + ')'; ctx.fillRect(-10, -10, W + 20, H + 20);
+      var gr = ctx.createRadialGradient(W / 2, 250, 10, W / 2, 250, 150); gr.addColorStop(0, c.rc + 'aa'); gr.addColorStop(1, c.rc + '00');
+      ctx.fillStyle = gr; ctx.fillRect(0, 90, W, 320);
+      ctx.save(); ctx.translate(W / 2, 250 + Math.sin(k * 6) * 3); ctx.scale(s, s);
+      drawSprite(c, ctx, -c.rows[0].length * px / 2, -c.rows.length * px / 2, px); ctx.restore();
+      ctx.fillStyle = c.rc; ctx.font = '900 20px "Noto Sans TC", sans-serif'; ctx.fillText(c.rar + (h.idx === 5 ? '！！' : ''), W / 2, 380);
+      ctx.fillStyle = '#fff6df'; ctx.font = '900 30px "Noto Sans TC", sans-serif'; ctx.fillText(c.name, W / 2, 416);
+    }
+  }
+
+  function egg(x, y, r, band) {
+    ctx.fillStyle = golden ? '#ffd23f' : '#f4e3b8';
+    ctx.beginPath(); ctx.ellipse(x, y, r * .82, r, 0, 0, 7); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.ellipse(x, y, r * .82, r, 0, 0, 7); ctx.clip();
+    ctx.fillStyle = band || (golden ? '#e8a912' : '#d96f3b');
+    ctx.beginPath(); ctx.moveTo(x - r, y - r * .1);
+    for (var i = 0; i < 6; i++) ctx.lineTo(x - r + (i + .5) * r / 3, y - r * .1 + (i % 2 ? -r * .22 : r * .22));
+    ctx.lineTo(x + r, y + r * .3); ctx.lineTo(x - r, y + r * .3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(x - r * .3, y - r * .45, r * .16, r * .3, .4, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBeast() {
+    var x = W / 2, y = 92, ph = hen.phase;
+    var breathe = ph === 'sleep' ? Math.sin(clock * 2) * 2 : 0;
+    ctx.save(); ctx.translate(x, y + breathe);
+    if (ph === 'alert') ctx.translate((Math.random() - .5) * 3, 0);
+    if (ph === 'watch') ctx.scale(1.04, 1.04);
+    // 鬃毛
+    ctx.fillStyle = '#3f5b7a'; ctx.beginPath();
+    for (var i = 0; i < 24; i++) { var a = i * Math.PI / 12, r = i % 2 ? 62 : 80; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r * .8); }
+    ctx.closePath(); ctx.fill();
+    // 角
+    ctx.fillStyle = '#f2e6c4';
+    [-1, 1].forEach(function (sx) {
+      ctx.beginPath(); ctx.moveTo(sx * 34, -44); ctx.quadraticCurveTo(sx * 78, -50, sx * 76, -92); ctx.quadraticCurveTo(sx * 58, -62, sx * 22, -40); ctx.fill();
+    });
+    // 臉
+    ctx.fillStyle = '#9dbdd0'; ctx.beginPath(); ctx.ellipse(0, 4, 46, 42, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#7ea1b8'; ctx.beginPath(); ctx.ellipse(0, 26, 26, 17, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#2b3b4d'; ctx.beginPath(); ctx.ellipse(-9, 26, 4, 3, 0, 0, 7); ctx.ellipse(9, 26, 4, 3, 0, 0, 7); ctx.fill();
+    // 眼睛
+    ctx.strokeStyle = '#1d2a38'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.fillStyle = '#1d2a38';
+    [-1, 1].forEach(function (sx) {
+      var ex = sx * 19, ey = -8;
+      if (ph === 'sleep') { ctx.beginPath(); ctx.moveTo(ex - 8, ey); ctx.quadraticCurveTo(ex, ey + 6, ex + 8, ey); ctx.stroke(); }
+      else if (ph === 'alert') { ctx.beginPath(); ctx.ellipse(ex, ey, 8, 3, 0, 0, 7); ctx.fill(); }
+      else { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(ex, ey, 9, 9, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#e5322a'; ctx.beginPath(); ctx.arc(ex, ey, 4.5, 0, 7); ctx.fill(); ctx.fillStyle = '#1d2a38';
+        ctx.beginPath(); ctx.moveTo(ex - sx * 12, ey - 14); ctx.lineTo(ex + sx * 8, ey - 7); ctx.stroke(); }
+    });
+    ctx.restore();
+    ctx.textAlign = 'center';
+    if (ph === 'sleep') {
+      ctx.fillStyle = '#6b4c28'; ctx.font = '700 14px "Space Grotesk", sans-serif'; ctx.textAlign = 'left';
+      var o = Math.sin(clock * 2) * 3; ctx.fillText('z', 270, 62 + o); ctx.font = '700 20px "Space Grotesk", sans-serif'; ctx.fillText('Z', 284, 44 - o);
+    } else if (ph === 'alert') {
+      ctx.fillStyle = '#d9341f'; ctx.font = '900 40px "Noto Sans TC", sans-serif'; ctx.fillText('！', 290, 62);
+    } else {
+      ctx.fillStyle = '#d9341f'; ctx.font = '900 22px "Noto Sans TC", sans-serif'; ctx.fillText('停！', 292, 62);
+    }
+  }
+
+  function drawThief() {
+    ctx.save(); ctx.translate(fox.x, fox.y);
+    var run = fox.v > 5 && state === 'play';
+    var sw = run ? Math.sin(clock * 22) * 6 : 0;
+    var flashRed = hit > 0;
+    // 腿
+    ctx.fillStyle = '#2f5e4e'; ctx.fillRect(-11, 12, 10, 20 + sw * .4); ctx.fillRect(1, 12, 10, 20 - sw * .4);
+    // 身體
+    ctx.fillStyle = flashRed ? '#e5533d' : '#1f2430'; ctx.fillRect(-14, -8, 28, 24);
+    ctx.fillStyle = '#f2f2f2'; ctx.fillRect(-4, -8, 8, 24);
+    // 頭
+    ctx.fillStyle = '#f2c08f'; ctx.fillRect(-12, -32, 24, 24);
+    ctx.fillStyle = '#c4532a'; ctx.fillRect(-13, -34, 26, 9); ctx.fillRect(-13, -34, 5, 16);
+    ctx.fillStyle = '#231c0a';
+    if (carrying || hit > 0) { ctx.fillRect(-7, -22, 3, 3); ctx.fillRect(4, -22, 3, 3); ctx.fillRect(-5, -14, 10, 3); }
+    else { ctx.fillRect(-7, -22, 3, 3); ctx.fillRect(4, -22, 3, 3); ctx.fillRect(-3, -14, 6, 2); }
+    if (carrying) {
+      ctx.fillStyle = '#f2c08f'; ctx.fillRect(-20, -30, 7, 24); ctx.fillRect(13, -30, 7, 24);
+      egg(0, -52, 17);
+    } else {
+      ctx.fillStyle = '#f2c08f'; ctx.fillRect(-20, -6, 7, 18); ctx.fillRect(13, -6, 7, 18);
+    }
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.save();
+    if (shake > 0) ctx.translate((Math.random() - .5) * 8, (Math.random() - .5) * 8);
+    var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#f1c98f'); g.addColorStop(.28, '#e2b46f'); g.addColorStop(1, '#c9974f');
+    ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H + 20);
+    // 太陽
+    ctx.fillStyle = 'rgba(255,244,214,.8)'; ctx.beginPath(); ctx.arc(52, 48, 22, 0, 7); ctx.fill();
+    // 沙丘
+    ctx.fillStyle = 'rgba(160,110,50,.16)';
+    ctx.beginPath(); ctx.moveTo(0, 230); ctx.quadraticCurveTo(90, 200, 180, 235); ctx.quadraticCurveTo(270, 262, 360, 220); ctx.lineTo(360, 560); ctx.lineTo(0, 560); ctx.fill();
+    // 小徑
+    ctx.fillStyle = 'rgba(255,240,200,.28)'; ctx.fillRect(W / 2 - 28, 150, 56, H - 150);
+    ctx.strokeStyle = 'rgba(120,80,30,.2)'; ctx.lineWidth = 2; ctx.setLineDash([8, 10]);
+    ctx.beginPath(); ctx.moveTo(W / 2, 190); ctx.lineTo(W / 2, 520); ctx.stroke(); ctx.setLineDash([]);
+    // 仙人掌
+    ctx.fillStyle = '#5f8a4f';
+    [[40, 380, 1], [320, 330, .8], [300, 470, 1]].forEach(function (c) {
+      ctx.save(); ctx.translate(c[0], c[1]); ctx.scale(c[2], c[2]);
+      ctx.fillRect(-6, -30, 12, 44); ctx.fillRect(-18, -18, 6, 14); ctx.fillRect(-18, -18, 12, 6); ctx.fillRect(12, -24, 6, 14); ctx.fillRect(6, -24, 12, 6);
+      ctx.restore();
+    });
+    // 蛋台
+    ctx.fillStyle = '#8c6a3c'; ctx.beginPath(); ctx.ellipse(W / 2, 166, 54, 18, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#a98450'; ctx.beginPath(); ctx.ellipse(W / 2, 162, 54, 16, 0, 0, 7); ctx.fill();
+    drawBeast();
+    if (!carrying) egg(W / 2, 148, 22);
+    // 藏身洞
+    ctx.fillStyle = '#3a2812'; ctx.beginPath(); ctx.ellipse(W / 2, 536, 40, 16, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#5a3f1c'; ctx.font = '700 11px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('藏身洞', W / 2, 556);
+    if (fox) drawThief();
+    if (msgT > 0) { ctx.globalAlpha = Math.min(1, msgT * 2); ctx.lineWidth = 4; ctx.strokeStyle = '#3b2a14'; ctx.fillStyle = '#fff6df'; ctx.font = '900 22px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center'; ctx.strokeText(msg, W / 2, 330); ctx.fillText(msg, W / 2, 330); ctx.globalAlpha = 1; }
+    drawHatch();
+    ctx.restore();
+  }
+
+  function loop(now) {
+    var dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (state === 'play') update(dt); else { clock += dt; if (state === 'hatch') { hatch.t += dt; if (hatch.t > 2.8) state = 'play'; } }
+    draw();
+    requestAnimationFrame(loop);
+  }
+  renderColl(); reset(); requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>

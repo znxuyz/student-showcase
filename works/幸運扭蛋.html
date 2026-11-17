@@ -1,0 +1,971 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>幸運抽獎機</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: the capsule machine (canvas dome + base + one big button) on the left; prize pool, prize editor and draw log on the right; stacks to one column on phones. */
+:root {
+  --bg: #E3EAF3;
+  --surface: #FFFFFF;
+  --surface-2: #EEF3F9;
+  --ink: #13203A;
+  --ink-2: #4B5A75;
+  --line: #CAD6E5;
+  --accent: #D63A2F;
+  --accent-deep: #9E2A22;
+  --accent-ink: #FFFFFF;
+  --gold: #E0A100;
+  --gold-ink: #3A2600;
+  --glass: rgba(255, 255, 255, .5);
+  --glass-line: #8EA3C0;
+  --veil: rgba(227, 234, 243, .86);
+  --font: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1525;
+    --surface: #162238;
+    --surface-2: #1D2B46;
+    --ink: #E8EEF9;
+    --ink-2: #9DAEC9;
+    --line: #2B3C5C;
+    --accent: #FF7466;
+    --accent-deep: #BE4A3E;
+    --accent-ink: #2A0B08;
+    --gold: #FFC83D;
+    --gold-ink: #3A2600;
+    --glass: rgba(160, 190, 235, .13);
+    --glass-line: #5F7BA8;
+    --veil: rgba(13, 21, 37, .82);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1525;
+  --surface: #162238;
+  --surface-2: #1D2B46;
+  --ink: #E8EEF9;
+  --ink-2: #9DAEC9;
+  --line: #2B3C5C;
+  --accent: #FF7466;
+  --accent-deep: #BE4A3E;
+  --accent-ink: #2A0B08;
+  --gold: #FFC83D;
+  --gold-ink: #3A2600;
+  --glass: rgba(160, 190, 235, .13);
+  --glass-line: #5F7BA8;
+  --veil: rgba(13, 21, 37, .82);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.6 var(--font);
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+.page { max-width: 1040px; margin-inline: auto; display: grid; gap: 28px; }
+header h1 {
+  margin: 0;
+  font-size: clamp(32px, 6vw, 48px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: .04em;
+  text-wrap: balance;
+}
+header p { margin: 8px 0 0; color: var(--ink-2); }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: 36px;
+  align-items: start;
+}
+@media (max-width: 780px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .machine { max-width: 420px; width: 100%; margin-inline: auto; }
+}
+.machine { padding-bottom: 8px; min-width: 0; }
+.stage { position: relative; }
+canvas#cv { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; max-width: 100%; }
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+
+.go {
+  margin-top: 14px;
+  width: 100%;
+  min-height: 64px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 900 22px/1 var(--font);
+  letter-spacing: .2em;
+  box-shadow: 0 6px 0 var(--accent-deep);
+  cursor: pointer;
+  transition: transform .08s, box-shadow .08s;
+}
+.go:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-deep); }
+.go:disabled { opacity: .62; cursor: default; }
+
+.side {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 22px;
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.side h2, .edit summary { margin: 0; font-size: 18px; font-weight: 900; letter-spacing: .06em; }
+.meta { margin: 2px 0 0; color: var(--ink-2); font-size: 14px; }
+
+.prizes { list-style: none; margin: 12px 0 0; padding: 0; display: grid; }
+.prize {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 6px;
+  border-top: 1px solid var(--line);
+  border-radius: 10px;
+  transition: background .4s;
+}
+.prize:first-child { border-top-color: transparent; }
+.pic {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--pc); color: #fff;
+  display: grid; place-items: center;
+}
+.pic svg { width: 22px; height: 22px; }
+.pn { display: grid; min-width: 0; }
+.pn b { font-weight: 700; overflow-wrap: anywhere; }
+.pn i { font-style: normal; font-size: 12px; letter-spacing: .1em; color: var(--ink-2); }
+.pcount { font: 500 14px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.prize.out { opacity: .45; }
+.prize.hit { background: var(--surface-2); }
+
+.controls {
+  display: flex; flex-wrap: wrap; gap: 12px 18px;
+  align-items: center;
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
+}
+.controls .ghost { margin-left: auto; }
+.sw { display: flex; gap: 8px; align-items: center; font-size: 15px; cursor: pointer; }
+.sw input { width: 20px; height: 20px; accent-color: var(--accent); }
+.ghost {
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+  border-radius: 12px; padding: 8px 14px; font: 700 14px var(--font); cursor: pointer;
+}
+.ghost:disabled, .sw input:disabled, .in:disabled { opacity: .5; cursor: default; }
+
+.edit summary { cursor: pointer; }
+.edit .meta { margin-top: 8px; }
+.edit fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.erows { margin-top: 8px; display: grid; }
+.erow {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 10px 0; border-top: 1px solid var(--line);
+}
+.erow:first-child { border-top-color: transparent; }
+.edot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+.in {
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+  border-radius: 10px; padding: 8px 10px; font: 500 15px var(--font); min-width: 0;
+}
+.ename { flex: 1 1 140px; }
+.qtyl { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); }
+.eqty { width: 76px; font-family: var(--mono); }
+.ebig { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.ebig input { width: 18px; height: 18px; accent-color: var(--gold); }
+.edel { margin-left: auto; padding: 6px 12px; }
+.eactions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+
+.hist { list-style: none; margin: 10px 0 0; padding: 0; max-height: 264px; overflow-y: auto; display: grid; }
+.hist li {
+  display: grid; grid-template-columns: 38px 12px minmax(0, 1fr) auto;
+  gap: 10px; align-items: center;
+  padding: 8px 0; border-top: 1px solid var(--line); font-size: 15px;
+}
+.hist li:first-child { border-top-color: transparent; }
+.hist .n, .hist time { font: 500 13px var(--mono); color: var(--ink-2); }
+.hist .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); }
+.hist .nm { overflow-wrap: anywhere; font-weight: 500; }
+.star {
+  margin-left: 8px; padding: 1px 8px; border-radius: 999px;
+  background: var(--gold); color: var(--gold-ink); font-size: 12px; font-weight: 700; letter-spacing: .1em;
+}
+.empty { margin: 10px 0 0; color: var(--ink-2); font-size: 14px; }
+
+.veil {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: var(--veil);
+  border-radius: 20px; padding: 16px;
+}
+.result {
+  width: min(100%, 340px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 26px 22px 20px;
+  text-align: center;
+  display: grid; gap: 8px; justify-items: center;
+  box-shadow: 0 18px 40px rgba(10, 20, 40, .24);
+  animation: pop .32s cubic-bezier(.2, 1.3, .4, 1);
+}
+.result.big { border: 3px solid var(--gold); box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold) 26%, transparent), 0 18px 40px rgba(10, 20, 40, .28); }
+.ricon {
+  width: 84px; height: 84px; border-radius: 50%;
+  background: var(--pc); color: #fff;
+  display: grid; place-items: center;
+}
+.ricon svg { width: 44px; height: 44px; }
+.rsub { margin: 6px 0 0; color: var(--ink-2); font-size: 14px; letter-spacing: .2em; }
+.rname { margin: 0; font-size: 28px; font-weight: 900; line-height: 1.2; text-wrap: balance; overflow-wrap: anywhere; }
+.rtag { padding: 2px 14px; border-radius: 999px; background: var(--gold); color: var(--gold-ink); font-size: 14px; font-weight: 900; letter-spacing: .3em; }
+.ractions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+.primary {
+  border: 0; border-radius: 12px; padding: 10px 18px;
+  background: var(--accent); color: var(--accent-ink);
+  font: 900 15px var(--font); letter-spacing: .08em; cursor: pointer;
+}
+@keyframes pop { from { transform: scale(.86); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .result { animation: none; }
+  .go, .prize { transition: none; }
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+
+<div class="page">
+  <header>
+    <h1>幸運抽獎機</h1>
+    <p>按下按鈕就開始轉。獎品和機率都能自己改,辦活動也能用。</p>
+  </header>
+
+  <div class="layout">
+    <section class="machine" aria-label="抽獎機">
+      <div class="stage">
+        <canvas id="cv" width="400" height="500" role="img" aria-label="裝滿彩色膠囊的抽獎機"></canvas>
+        <div class="veil" id="veil" hidden>
+          <div class="result" id="resultCard" role="dialog" aria-modal="true" aria-labelledby="rname">
+            <div class="ricon" id="ricon"></div>
+            <p class="rsub" id="rsub">恭喜抽中</p>
+            <h3 class="rname" id="rname"></h3>
+            <div class="rtag" id="rtag" hidden>頭獎</div>
+            <div class="ractions">
+              <button class="primary" id="again" type="button">再抽一次</button>
+              <button class="ghost" id="closeBtn" type="button">關閉</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="go" id="go" type="button">轉動抽獎</button>
+    </section>
+
+    <aside class="side">
+      <section>
+        <h2>獎品池</h2>
+        <p class="meta" id="poolMeta"></p>
+        <ul class="prizes" id="prizeList"></ul>
+        <div class="controls">
+          <label class="sw" for="deduct"><input type="checkbox" id="deduct"> 抽中後扣除數量</label>
+          <label class="sw" for="sound"><input type="checkbox" id="sound"> 音效</label>
+          <button class="ghost" id="resetBtn" type="button">重設</button>
+        </div>
+      </section>
+
+      <details class="edit" id="editor">
+        <summary>編輯獎品</summary>
+        <p class="meta">數量越多,抽中機率越高。修改數量會把該獎品的剩餘數量重設為新數量。最多 12 項。</p>
+        <fieldset id="editFs">
+          <div class="erows" id="erows"></div>
+          <div class="eactions">
+            <button class="ghost" id="addBtn" type="button">新增獎品</button>
+            <button class="ghost" id="defaultBtn" type="button">恢復預設獎品</button>
+          </div>
+        </fieldset>
+      </details>
+
+      <section>
+        <h2>抽獎紀錄</h2>
+        <ol class="hist" id="history"></ol>
+        <p class="empty" id="emptyHist">還沒有紀錄,按下「轉動抽獎」試試手氣。</p>
+      </section>
+    </aside>
+  </div>
+</div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="sr" id="live" aria-live="polite"></div>
+
+<script>
+(function () {
+  var ICONS = {
+    gpu: '<rect x="2" y="7" width="20" height="10" rx="2"/><circle cx="8" cy="12" r="2.6"/><circle cx="15.5" cy="12" r="2.6"/><path d="M6 17v2M10 17v2"/>',
+    phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.4"/><circle cx="10.2" cy="6.2" r=".9"/><circle cx="13.8" cy="6.2" r=".9"/>',
+    tablet: '<rect x="4" y="3" width="16" height="18" rx="2.2"/><path d="M10.5 18h3"/>',
+    candy: '<circle cx="12" cy="12" r="4.5"/><path d="M7.8 9.6L3.5 7.5v9l4.3-2.1M16.2 9.6l4.3-2.1v9l-4.3-2.1"/>',
+    cookie: '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="9.5" r="1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="15" r="1" fill="currentColor" stroke="none"/>',
+    pop: '<rect x="7" y="2.5" width="10" height="13" rx="5"/><path d="M12 15.5v6"/>',
+    gift: '<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 13h18M12 8c-2-4-6-4-6-1.5S10 8 12 8zM12 8c2-4 6-4 6-1.5S14 8 12 8z"/>'
+  };
+  function icon(n) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[n] || ICONS.gift) + '</svg>';
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function $(id) { return document.getElementById(id); }
+
+  var PALETTE = ["#1F9A5A", "#4F5BD5", "#0E8FB0", "#EE5A96", "#C9821A", "#8B5CF0", "#D6502F", "#2E7D9A", "#7A9A1F", "#B23A8E", "#3F6FD8", "#6B7A8F"];
+  var MAXP = 12, KEY = "lucky-draw-v2", TARGET_BALLS = 30;
+  var DEFAULTS = [
+    { name: "RTX 5090 顯卡", qty: 1, big: true, icon: "gpu" },
+    { name: "iPhone 18 Pro Max 1TB", qty: 1, big: true, icon: "phone" },
+    { name: "平板", qty: 2, big: false, icon: "tablet" },
+    { name: "糖果", qty: 8, big: false, icon: "candy" },
+    { name: "餅乾", qty: 8, big: false, icon: "cookie" },
+    { name: "冰棒", qty: 8, big: false, icon: "pop" }
+  ];
+  var uidN = 0;
+  function uid() { return ++uidN; }
+  function mk(d, i) {
+    var q = Math.max(0, Math.min(999, Math.round(d.qty)));
+    return { id: uid(), name: d.name, qty: q, big: !!d.big, color: d.color || PALETTE[i % PALETTE.length], icon: ICONS[d.icon] ? d.icon : "gift", left: q };
+  }
+  function loadCfg() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      if (!o || !Array.isArray(o.prizes) || o.prizes.length < 1 || o.prizes.length > MAXP) return null;
+      var ok = o.prizes.every(function (p) {
+        return p && typeof p.name === "string" && typeof p.qty === "number" && p.qty >= 0 && p.qty <= 999 && /^#[0-9a-fA-F]{6}$/.test(p.color || "");
+      });
+      return ok ? o : null;
+    } catch (e) { return null; }
+  }
+  function saveCfg() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        prizes: prizes.map(function (p) { return { name: p.name, qty: p.qty, big: p.big, color: p.color, icon: p.icon }; }),
+        deduct: deduct, sound: soundOn
+      }));
+    } catch (e) {}
+  }
+
+  var cfg = loadCfg();
+  var prizes = (cfg ? cfg.prizes : DEFAULTS).map(mk);
+  var deduct = cfg ? cfg.deduct !== false : true;
+  var soundOn = cfg ? cfg.sound !== false : true;
+
+  function nm(p) { return p.name.trim() || "未命名獎品"; }
+  function wt(p) { return deduct ? p.left : p.qty; }
+  function totalW() { return prizes.reduce(function (s, p) { return s + wt(p); }, 0); }
+  function anyQty() { return prizes.some(function (p) { return p.qty > 0; }); }
+
+  var cv = $("cv"), ctx = cv.getContext("2d");
+  var W = 400, H = 500, CX = 200, CY = 190, R = 170, BR = 19;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = W * dpr; cv.height = H * dpr;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var SHAKE = reduce ? 0.7 : 1.7;
+
+  function rnd() {
+    try { var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; }
+    catch (e) { return Math.random(); }
+  }
+  function rint(n) { return Math.floor(rnd() * n); }
+
+  var hist = [], balls = [], winner = null, slotBall = null;
+  var phase = "idle", t0 = 0, chosen = -1, drawNo = 0, nextTick = 0;
+
+  /* ---------- sound (WebAudio, synthesized) ---------- */
+  var actx = null, noiseBuf = null, motor = null;
+  function ac() {
+    if (!soundOn) return null;
+    try {
+      if (!actx) {
+        var C = window.AudioContext || window.webkitAudioContext;
+        if (!C) return null;
+        actx = new C();
+      }
+      if (actx.state === "suspended") actx.resume();
+      return actx;
+    } catch (e) { return null; }
+  }
+  function noise(a) {
+    if (!noiseBuf) {
+      noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate);
+      var d = noiseBuf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
+  function tick(vol) {
+    var a = ac(); if (!a) return;
+    var s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime;
+    s.buffer = noise(a); s.playbackRate.value = 0.8 + Math.random() * 0.8;
+    f.type = "bandpass"; f.frequency.value = 1500 + Math.random() * 2500; f.Q.value = 3;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    s.connect(f); f.connect(g); g.connect(a.destination);
+    s.start(t, Math.random() * 0.5, 0.06);
+  }
+  function tone(freq, when, dur, type, vol) {
+    var a = ac(); if (!a) return;
+    var o = a.createOscillator(), g = a.createGain(), t = a.currentTime + when;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  function thunk(vol) {
+    var a = ac(); if (!a) return;
+    var o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+    o.type = "sine";
+    o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.2);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t + 0.3);
+  }
+  function motorStart() {
+    var a = ac(); if (!a || motor) return;
+    var o = a.createOscillator(), f = a.createBiquadFilter(), g = a.createGain();
+    o.type = "sawtooth"; o.frequency.value = 48;
+    f.type = "lowpass"; f.frequency.value = 260;
+    g.gain.setValueAtTime(0.0001, a.currentTime);
+    g.gain.linearRampToValueAtTime(0.07, a.currentTime + 0.15);
+    o.connect(f); f.connect(g); g.connect(a.destination);
+    o.start();
+    motor = { o: o, g: g, a: a };
+  }
+  function motorStop() {
+    if (!motor) return;
+    var m = motor; motor = null;
+    try {
+      var t = m.a.currentTime;
+      m.g.gain.cancelScheduledValues(t);
+      m.g.gain.setValueAtTime(0.07, t);
+      m.g.gain.linearRampToValueAtTime(0.0001, t + 0.2);
+      m.o.stop(t + 0.25);
+    } catch (e) {}
+  }
+  function ding() {
+    tone(1318.5, 0, 1.2, "sine", 0.3);
+    tone(1976, 0, 0.9, "sine", 0.12);
+    tone(2637, 0, 0.6, "sine", 0.06);
+  }
+  function cheer() {
+    var a = ac(); if (!a) return;
+    var s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime;
+    s.buffer = noise(a); s.loop = true;
+    f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = 0.7;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.35);
+    g.gain.linearRampToValueAtTime(0.1, t + 1.4);
+    g.gain.linearRampToValueAtTime(0.0001, t + 2.4);
+    s.connect(f); f.connect(g); g.connect(a.destination);
+    s.start(t); s.stop(t + 2.5);
+    for (var i = 0; i < 36; i++) setTimeout(function () { tick(0.1); }, 150 + Math.random() * 2000);
+  }
+  function jackpotSound() {
+    [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5].forEach(function (f, i) { tone(f, i * 0.09, 0.28, "triangle", 0.22); });
+    [1046.5, 1318.5, 1568].forEach(function (f) { tone(f, 0.72, 1.3, "triangle", 0.14); });
+    cheer();
+  }
+
+  /* ---------- confetti and fireworks ---------- */
+  var fx = $("fx"), fc = fx.getContext("2d"), parts = [], fxOn = false, fxLast = 0, fxUntil = 0;
+  var COLS = ["#FF5A4F", "#FFC83D", "#3DDC97", "#4DA3FF", "#B07CFF", "#FF7EB6", "#FFFFFF"];
+  function sizeFx() { fx.width = Math.round(window.innerWidth * dpr); fx.height = Math.round(window.innerHeight * dpr); }
+  sizeFx(); window.addEventListener("resize", sizeFx);
+  function addConfetti(x, y, n, a0, spread, v0, v1) {
+    for (var i = 0; i < n; i++) {
+      var a = a0 + (rnd() - 0.5) * spread, v = v0 + rnd() * (v1 - v0);
+      parts.push({ k: "c", x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: 6 + rnd() * 6, h: 4 + rnd() * 4, r: rnd() * 6.28, vr: (rnd() - 0.5) * 14, c: COLS[rint(COLS.length)], life: 0, max: 3 + rnd() * 1.2 });
+    }
+  }
+  function addRain(n) {
+    for (var i = 0; i < n; i++) {
+      parts.push({ k: "c", x: rnd() * window.innerWidth, y: -20 - rnd() * 80, vx: (rnd() - 0.5) * 120, vy: 100 + rnd() * 200, w: 6 + rnd() * 6, h: 4 + rnd() * 4, r: rnd() * 6.28, vr: (rnd() - 0.5) * 12, c: COLS[rint(COLS.length)], life: 0, max: 3.2 + rnd() * 1.2 });
+    }
+  }
+  function addSpark(x, y, col) {
+    var n = 64;
+    for (var i = 0; i < n; i++) {
+      var a = i / n * Math.PI * 2 + rnd() * 0.1, v = 140 + rnd() * 190;
+      parts.push({ k: "s", x: x, y: y, px: x, py: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, c: col, life: 0, max: 1.1 + rnd() * 0.6 });
+    }
+  }
+  function startFx() {
+    fxUntil = performance.now() + 4800;
+    if (!fxOn) { fxOn = true; fxLast = performance.now(); requestAnimationFrame(fxFrame); }
+  }
+  function fxFrame(now) {
+    var dt = Math.min(0.04, (now - fxLast) / 1000); fxLast = now;
+    fc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fc.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      p.life += dt;
+      if (p.k === "c") {
+        p.vy += 700 * dt; p.vx *= 1 - 1.2 * dt; p.vy *= 1 - 0.9 * dt;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+        fc.globalAlpha = p.life > p.max - 0.7 ? Math.max(0, (p.max - p.life) / 0.7) : 1;
+        fc.save(); fc.translate(p.x, p.y); fc.rotate(p.r);
+        fc.scale(1, Math.cos(p.life * 9 + p.r));
+        fc.fillStyle = p.c; fc.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        fc.restore();
+      } else {
+        p.px = p.x; p.py = p.y;
+        p.vy += 260 * dt; p.vx *= 1 - 1.1 * dt; p.vy *= 1 - 1.1 * dt;
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        fc.globalAlpha = Math.max(0, 1 - p.life / p.max);
+        fc.strokeStyle = p.c; fc.lineWidth = 2.5; fc.lineCap = "round";
+        fc.beginPath(); fc.moveTo(p.px, p.py); fc.lineTo(p.x, p.y); fc.stroke();
+      }
+    }
+    fc.globalAlpha = 1;
+    parts = parts.filter(function (p) { return p.life < p.max; });
+    if (parts.length || now < fxUntil) requestAnimationFrame(fxFrame);
+    else { fxOn = false; fc.clearRect(0, 0, window.innerWidth, window.innerHeight); }
+  }
+  function celebrate() {
+    if (reduce) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    addConfetti(w * 0.08, h, 80, -Math.PI / 2 + 0.5, 0.7, 700, 1200);
+    addConfetti(w * 0.92, h, 80, -Math.PI / 2 - 0.5, 0.7, 700, 1200);
+    setTimeout(function () { addRain(70); startFx(); }, 350);
+    var r = cv.getBoundingClientRect();
+    [0, 350, 700, 1050].forEach(function (d) {
+      setTimeout(function () {
+        addSpark(r.left + r.width * (0.2 + rnd() * 0.6), r.top + r.height * (0.12 + rnd() * 0.3), COLS[rint(6)]);
+        thunk(0.22); tick(0.2);
+        startFx();
+      }, d);
+    });
+    startFx();
+  }
+
+  /* ---------- machine physics ---------- */
+  function newBall(p, atTop) {
+    var ang = rnd() * Math.PI * 2, d = rnd() * (R - BR - 10);
+    return {
+      p: p,
+      x: CX + Math.cos(ang) * d,
+      y: atTop ? CY - R + BR + 8 : CY + Math.sin(ang) * d,
+      vx: (rnd() - 0.5) * 80, vy: 0,
+      a: rnd() * 6.28, s: 1, state: "in"
+    };
+  }
+
+  function step(dt, shake) {
+    var i, j, b, o, dx, dy, d;
+    for (i = 0; i < balls.length; i++) {
+      b = balls[i];
+      b.vy += 900 * dt;
+      if (shake > 0) {
+        dx = b.x - CX; dy = b.y - CY; d = Math.hypot(dx, dy) || 1;
+        b.vx += (-dy / d) * shake * 900 * dt + (rnd() - 0.5) * shake * 1500 * dt;
+        b.vy += (dx / d) * shake * 500 * dt + (rnd() - 0.5) * shake * 900 * dt;
+        if (dy > 0) b.vy -= shake * 1700 * dt;
+      }
+      var sp = Math.hypot(b.vx, b.vy);
+      if (sp > 900) { b.vx *= 900 / sp; b.vy *= 900 / sp; }
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      b.a += (b.vx * dt / BR) * 0.5;
+      dx = b.x - CX; dy = b.y - CY; d = Math.hypot(dx, dy);
+      var max = R - BR - 3;
+      if (d > max) {
+        var nx = dx / d, ny = dy / d;
+        b.x = CX + nx * max; b.y = CY + ny * max;
+        var vn = b.vx * nx + b.vy * ny;
+        if (vn > 0) { b.vx -= 1.45 * vn * nx; b.vy -= 1.45 * vn * ny; }
+      }
+      if (b.state === "dying") b.s -= dt * 2.6;
+    }
+    for (i = 0; i < balls.length; i++) {
+      if (balls[i].state === "dying") continue;
+      for (j = i + 1; j < balls.length; j++) {
+        if (balls[j].state === "dying") continue;
+        b = balls[i]; o = balls[j];
+        dx = o.x - b.x; dy = o.y - b.y; d = Math.hypot(dx, dy);
+        if (d > 0 && d < BR * 2) {
+          var nx2 = dx / d, ny2 = dy / d, ov = (BR * 2 - d) / 2;
+          b.x -= nx2 * ov; b.y -= ny2 * ov; o.x += nx2 * ov; o.y += ny2 * ov;
+          var rel = (b.vx - o.vx) * nx2 + (b.vy - o.vy) * ny2;
+          if (rel > 0) {
+            var imp = (1 + 0.5) * rel / 2;
+            b.vx -= imp * nx2; b.vy -= imp * ny2; o.vx += imp * nx2; o.vy += imp * ny2;
+          }
+        }
+      }
+    }
+    if (balls.some(function (x) { return x.state === "dying" && x.s <= 0; })) {
+      balls = balls.filter(function (x) { return !(x.state === "dying" && x.s <= 0); });
+    }
+  }
+
+  function target(i, tot) {
+    var w = wt(prizes[i]);
+    if (w <= 0 || tot <= 0) return 0;
+    return Math.min(w, Math.max(1, Math.round(w / tot * TARGET_BALLS)));
+  }
+  function makeBalls() {
+    balls = []; winner = null; slotBall = null;
+    var tot = totalW();
+    prizes.forEach(function (p, i) { for (var k = 0, n = target(i, tot); k < n; k++) balls.push(newBall(i)); });
+    for (var n = 0; n < 260; n++) step(1 / 120, 0);
+  }
+  function syncBalls() {
+    var tot = totalW();
+    prizes.forEach(function (p, i) {
+      var t = target(i, tot);
+      var cur = balls.filter(function (b) { return b.p === i && b.state === "in"; });
+      var k;
+      for (k = cur.length; k < t; k++) balls.push(newBall(i, true));
+      for (k = t; k < cur.length; k++) cur[k].state = "dying";
+    });
+  }
+
+  function theme() {
+    var s = getComputedStyle(document.documentElement);
+    function g(k) { return s.getPropertyValue(k).trim(); }
+    return { accent: g("--accent"), ink: g("--accent-ink"), glass: g("--glass"), gl: g("--glass-line") };
+  }
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function drawBall(x, y, color, a, s) {
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(s, s); ctx.rotate(a);
+    ctx.beginPath(); ctx.arc(0, 0, BR, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = color; ctx.fillRect(-BR, -BR, BR * 2, BR);
+    ctx.fillStyle = "#F4F7FB"; ctx.fillRect(-BR, 0, BR * 2, BR);
+    ctx.fillStyle = "rgba(0,0,0,.2)"; ctx.fillRect(-BR, -1, BR * 2, 2);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(s, s);
+    ctx.beginPath(); ctx.arc(0, 0, BR, 0, Math.PI * 2);
+    var gr = ctx.createRadialGradient(-BR * 0.35, -BR * 0.4, BR * 0.1, 0, 0, BR);
+    gr.addColorStop(0, "rgba(255,255,255,.55)");
+    gr.addColorStop(0.35, "rgba(255,255,255,0)");
+    gr.addColorStop(1, "rgba(0,0,0,.2)");
+    ctx.fillStyle = gr; ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.restore();
+  }
+  function colorOf(i) { return prizes[i] ? prizes[i].color : "#888888"; }
+
+  function render() {
+    var t = theme(), i, b;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    rr(172, 8, 56, 18, 9); ctx.fillStyle = t.accent; ctx.fill();
+
+    rr(40, 350, 320, 140, 26); ctx.fillStyle = t.accent; ctx.fill();
+    ctx.save(); rr(40, 350, 320, 140, 26); ctx.clip();
+    ctx.fillStyle = "rgba(255,255,255,.2)"; ctx.fillRect(40, 350, 320, 10);
+    var bg = ctx.createLinearGradient(0, 400, 0, 490);
+    bg.addColorStop(0, "rgba(0,0,0,0)"); bg.addColorStop(1, "rgba(0,0,0,.22)");
+    ctx.fillStyle = bg; ctx.fillRect(40, 400, 320, 90);
+    ctx.restore();
+    ctx.fillStyle = t.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = "900 20px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif";
+    try { ctx.letterSpacing = "6px"; } catch (e) {}
+    ctx.fillText("幸運抽獎機", CX + 3, 382);
+    try { ctx.letterSpacing = "0px"; } catch (e) {}
+
+    rr(140, 408, 120, 64, 18); ctx.fillStyle = "rgba(0,0,0,.42)"; ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2; ctx.stroke();
+    if (slotBall) {
+      ctx.save(); rr(142, 410, 116, 60, 16); ctx.clip();
+      drawBall(CX, slotBall.y, slotBall.color, 0.35, 1);
+      ctx.restore();
+    }
+
+    ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2); ctx.fillStyle = t.glass; ctx.fill();
+    for (i = 0; i < balls.length; i++) {
+      b = balls[i];
+      if (b.s > 0) drawBall(b.x, b.y, colorOf(b.p), b.a, Math.max(0.01, b.s));
+    }
+    if (winner && (phase === "toSlot" || phase === "hide")) {
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 352); ctx.clip();
+      drawBall(winner.x, winner.y, winner.color, winner.a, 1);
+      ctx.restore();
+    }
+    ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2);
+    ctx.strokeStyle = t.gl; ctx.lineWidth = 5; ctx.stroke();
+    ctx.lineCap = "round"; ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.arc(CX, CY, R - 16, Math.PI * 1.12, Math.PI * 1.36); ctx.stroke();
+    ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.arc(CX, CY, R - 16, Math.PI * 1.43, Math.PI * 1.47); ctx.stroke();
+    ctx.lineCap = "butt";
+  }
+
+  function bounce(t) {
+    var n = 7.5625, d = 2.75;
+    if (t < 1 / d) return n * t * t;
+    if (t < 2 / d) { t -= 1.5 / d; return n * t * t + 0.75; }
+    if (t < 2.5 / d) { t -= 2.25 / d; return n * t * t + 0.9375; }
+    t -= 2.625 / d; return n * t * t + 0.984375;
+  }
+
+  function shakeLevel(now) {
+    if (phase !== "shake") return 0;
+    var rem = SHAKE - (now - t0) / 1000;
+    return rem < 0.25 ? Math.max(0, rem / 0.25) : 1;
+  }
+
+  function pickPrize() {
+    var tot = totalW();
+    if (tot <= 0) return -1;
+    var r = rnd() * tot, acc = 0, last = -1;
+    for (var i = 0; i < prizes.length; i++) {
+      var w = wt(prizes[i]);
+      if (w <= 0) continue;
+      last = i; acc += w;
+      if (r < acc) return i;
+    }
+    return last;
+  }
+
+  function pickWinner() {
+    var c = balls.filter(function (b) { return b.p === chosen && b.state === "in"; });
+    var b = c.length ? c[rint(c.length)] : newBall(chosen);
+    balls = balls.filter(function (x) { return x !== b; });
+    winner = { p: chosen, color: colorOf(chosen), x: b.x, y: b.y, fx: b.x, fy: b.y, a: b.a };
+  }
+
+  function advance(now) {
+    var e = (now - t0) / 1000, u;
+    if (phase === "shake") {
+      if (now > nextTick) { tick(0.05 + rnd() * 0.06); nextTick = now + 40 + rnd() * 60; }
+      if (e >= SHAKE) { motorStop(); pickWinner(); phase = "toSlot"; t0 = now; }
+    } else if (phase === "toSlot") {
+      u = Math.min(1, e / 0.6);
+      var k = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      winner.x = winner.fx + (CX - winner.fx) * k;
+      winner.y = winner.fy + (336 - winner.fy) * k;
+      winner.a += 0.12;
+      if (u >= 1) { phase = "hide"; t0 = now; }
+    } else if (phase === "hide") {
+      u = Math.min(1, e / 0.22);
+      winner.y = 336 + 36 * u;
+      if (u >= 1) { phase = "fall"; t0 = now; thunk(0.3); }
+    } else if (phase === "fall") {
+      u = Math.min(1, e / 0.7);
+      slotBall = { color: winner ? winner.color : colorOf(chosen), y: 392 + 48 * bounce(u) };
+      if (u >= 1) { phase = "land"; t0 = now; winner = null; ding(); }
+    } else if (phase === "land") {
+      if (e >= 0.3) { phase = "idle"; finish(); }
+    }
+  }
+
+  var last = performance.now(), acc = 0;
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now; acc += dt;
+    var lvl = shakeLevel(now);
+    while (acc >= 1 / 120) { step(1 / 120, lvl); acc -= 1 / 120; }
+    advance(now);
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- UI ---------- */
+  var goBtn = $("go"), veil = $("veil"), again = $("again"), deductBox = $("deduct"), soundBox = $("sound"), resetBtn = $("resetBtn");
+  deductBox.checked = deduct; soundBox.checked = soundOn;
+
+  function updateButton() {
+    var busy = phase !== "idle", any = totalW() > 0;
+    goBtn.disabled = busy || !any;
+    goBtn.textContent = busy ? "抽獎中…" : (any ? "轉動抽獎" : (anyQty() ? "獎品已抽完" : "請先設定數量"));
+    deductBox.disabled = busy; resetBtn.disabled = busy;
+    $("editFs").disabled = busy;
+  }
+
+  function renderPrizes() {
+    var tot = totalW();
+    $("prizeList").innerHTML = prizes.map(function (p) {
+      var w = wt(p), out = w <= 0;
+      var right = out ? (p.qty > 0 ? "已抽完" : "未設定") : (w / tot * 100).toFixed(1) + "%";
+      var sub = (p.big ? "頭獎" : "一般") + (deduct ? " · 剩 " + p.left + "/" + p.qty : " · 數量 " + p.qty);
+      return '<li class="prize' + (out ? " out" : "") + '" data-id="' + p.id + '" style="--pc:' + p.color + '">' +
+        '<span class="pic">' + icon(p.icon) + '</span>' +
+        '<span class="pn"><b>' + esc(nm(p)) + '</b><i>' + sub + '</i></span>' +
+        '<span class="pcount">' + right + '</span></li>';
+    }).join("");
+    $("poolMeta").textContent = tot > 0
+      ? (deduct ? "剩 " + tot + " 個獎品,抽中後會扣除。" : "數量只決定機率,抽中不會扣除。")
+      : "目前沒有可抽的獎品。";
+  }
+
+  function renderHist() {
+    $("emptyHist").hidden = hist.length > 0;
+    $("history").innerHTML = hist.slice().reverse().map(function (h) {
+      return '<li style="--pc:' + h.color + '"><span class="n">#' + h.n + '</span><span class="dot"></span>' +
+        '<span class="nm">' + esc(h.name) + (h.big ? '<span class="star">頭獎</span>' : "") + '</span>' +
+        '<time>' + h.t.toLocaleTimeString("zh-TW", { hour12: false }) + '</time></li>';
+    }).join("");
+  }
+
+  function renderEditor() {
+    $("erows").innerHTML = prizes.map(function (p) {
+      return '<div class="erow" data-id="' + p.id + '">' +
+        '<span class="edot" style="background:' + p.color + '"></span>' +
+        '<input class="in ename" id="en' + p.id + '" type="text" maxlength="20" value="' + esc(p.name) + '" aria-label="獎品名稱">' +
+        '<label class="qtyl" for="eq' + p.id + '">數量<input class="in eqty" id="eq' + p.id + '" type="number" min="0" max="999" step="1" inputmode="numeric" value="' + p.qty + '"></label>' +
+        '<label class="ebig" for="eb' + p.id + '"><input type="checkbox" class="ebigc" id="eb' + p.id + '"' + (p.big ? " checked" : "") + '>頭獎</label>' +
+        '<button class="ghost edel" type="button" aria-label="刪除 ' + esc(nm(p)) + '"' + (prizes.length <= 1 ? " disabled" : "") + '>刪除</button></div>';
+    }).join("");
+    $("addBtn").disabled = prizes.length >= MAXP;
+  }
+
+  function showResult(i) {
+    var p = prizes[i];
+    veil.style.setProperty("--pc", p.color);
+    $("ricon").innerHTML = icon(p.icon);
+    $("rname").textContent = nm(p);
+    $("rtag").hidden = !p.big;
+    $("rsub").textContent = p.big ? "恭喜抽中頭獎!" : "恭喜抽中";
+    $("resultCard").classList.toggle("big", p.big);
+    again.textContent = totalW() > 0 ? "再抽一次" : "重設獎池";
+    veil.hidden = false;
+    again.focus();
+    $("live").textContent = "抽中:" + nm(p);
+  }
+  function hideResult() { veil.hidden = true; }
+  function closeResult() { hideResult(); goBtn.focus(); }
+
+  function finish() {
+    var p = prizes[chosen];
+    drawNo++;
+    if (deduct) p.left = Math.max(0, p.left - 1);
+    hist.push({ n: drawNo, name: nm(p), color: p.color, big: p.big, t: new Date() });
+    syncBalls();
+    renderPrizes(); renderHist(); updateButton(); showResult(chosen);
+    var row = document.querySelector('.prize[data-id="' + p.id + '"]');
+    if (row) { row.classList.add("hit"); setTimeout(function () { row.classList.remove("hit"); }, 1400); }
+    if (p.big) { celebrate(); jackpotSound(); }
+  }
+
+  function startDraw() {
+    if (phase !== "idle") return;
+    var i = pickPrize();
+    if (i < 0) return;
+    hideResult(); slotBall = null;
+    chosen = i;
+    ac(); motorStart();
+    phase = "shake"; t0 = performance.now(); nextTick = 0;
+    updateButton();
+  }
+
+  function rebuild() {
+    hideResult();
+    makeBalls(); renderPrizes(); updateButton();
+  }
+  function restock() { prizes.forEach(function (p) { p.left = p.qty; }); }
+  function resetAll() {
+    if (phase !== "idle") return;
+    hist = []; drawNo = 0; restock();
+    rebuild(); renderHist();
+  }
+
+  function rowPrize(el) {
+    var row = el.closest(".erow");
+    if (!row) return null;
+    var id = +row.getAttribute("data-id");
+    for (var i = 0; i < prizes.length; i++) if (prizes[i].id === id) return prizes[i];
+    return null;
+  }
+  function unusedColor() {
+    for (var i = 0; i < PALETTE.length; i++) {
+      if (!prizes.some(function (p) { return p.color === PALETTE[i]; })) return PALETTE[i];
+    }
+    return PALETTE[prizes.length % PALETTE.length];
+  }
+
+  var erows = $("erows");
+  erows.addEventListener("input", function (e) {
+    if (!e.target.classList.contains("ename")) return;
+    var p = rowPrize(e.target); if (!p) return;
+    p.name = e.target.value;
+    renderPrizes(); saveCfg();
+  });
+  erows.addEventListener("change", function (e) {
+    var p = rowPrize(e.target); if (!p) return;
+    if (e.target.classList.contains("eqty")) {
+      var q = Math.round(Number(e.target.value));
+      if (!isFinite(q)) q = 0;
+      p.qty = Math.max(0, Math.min(999, q));
+      p.left = p.qty;
+      e.target.value = p.qty;
+      rebuild(); saveCfg();
+    } else if (e.target.classList.contains("ebigc")) {
+      p.big = e.target.checked;
+      renderPrizes(); saveCfg();
+    }
+  });
+  erows.addEventListener("click", function (e) {
+    var btn = e.target.closest(".edel");
+    if (!btn || prizes.length <= 1) return;
+    var p = rowPrize(btn); if (!p) return;
+    prizes = prizes.filter(function (x) { return x !== p; });
+    renderEditor(); rebuild(); saveCfg();
+  });
+  $("addBtn").addEventListener("click", function () {
+    if (prizes.length >= MAXP) return;
+    prizes.push(mk({ name: "新獎品", qty: 1, big: false, icon: "gift", color: unusedColor() }, prizes.length));
+    renderEditor(); rebuild(); saveCfg();
+    var inp = $("en" + prizes[prizes.length - 1].id);
+    if (inp) { inp.focus(); inp.select(); }
+  });
+  $("defaultBtn").addEventListener("click", function () {
+    prizes = DEFAULTS.map(mk);
+    hist = []; drawNo = 0;
+    renderEditor(); rebuild(); renderHist(); saveCfg();
+  });
+
+  goBtn.addEventListener("click", startDraw);
+  again.addEventListener("click", function () {
+    if (totalW() > 0) startDraw(); else { resetAll(); goBtn.focus(); }
+  });
+  $("closeBtn").addEventListener("click", closeResult);
+  resetBtn.addEventListener("click", resetAll);
+  deductBox.addEventListener("change", function () {
+    if (phase !== "idle") return;
+    deduct = deductBox.checked; restock();
+    rebuild(); saveCfg();
+  });
+  soundBox.addEventListener("change", function () {
+    soundOn = soundBox.checked;
+    if (!soundOn) motorStop();
+    saveCfg();
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !veil.hidden) closeResult(); });
+
+  makeBalls(); renderPrizes(); renderEditor(); renderHist(); updateButton();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>

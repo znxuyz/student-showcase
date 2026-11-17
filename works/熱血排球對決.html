@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>熱血排球對決</title>
+<style>
+:root{--bg:#f4f1ea;--fg:#222;--card:#fff;--ac:#e8590c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--fg:#eee;--card:#222831}}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#eee;--card:#222831}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Noto Sans TC",sans-serif}
+body{display:flex;flex-direction:column;align-items:center;padding:8px}
+#w{position:relative;width:100%;max-width:800px}
+canvas{width:100%;height:auto;display:block;border-radius:12px;background:#000;touch-action:none}
+#ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.6);border-radius:12px;color:#fff;text-align:center}
+#ov h1{margin:0;font-size:clamp(22px,5vw,38px)}
+#ov p{margin:0;font-size:clamp(12px,2.5vw,15px);opacity:.9}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+button{font:inherit;border:0;border-radius:10px;padding:10px 18px;background:var(--card);color:var(--fg);cursor:pointer;font-weight:700}
+button.on{background:var(--ac);color:#fff}
+#go{background:#2f9e44;color:#fff;font-size:18px;padding:12px 30px}
+#tc{display:flex;gap:8px;margin-top:10px;width:100%;max-width:800px;justify-content:space-between}
+#tc button{flex:1;padding:18px 0;font-size:20px;user-select:none;-webkit-user-select:none;touch-action:none}
+</style></head><body>
+<div id="w"><canvas id="c" width="800" height="450"></canvas>
+<div id="ov"><h1>🏐 熱血排球對決</h1>
+<p>3 對 3 團體戰！你操控橘隊（左側）離球最近的選手（頭上有黃色箭頭），先得 7 分獲勝</p>
+<p>鍵盤：← → 移動　↑ 跳躍　空白鍵 殺球／發球蓄力（按住蓄力，放開發球）</p>
+<div class="row" id="dr"><button data-d="easy">簡單</button><button data-d="normal" class="on">普通</button><button data-d="hard">困難</button></div>
+<button id="go">開始比賽</button></div></div>
+<div id="tc"><button id="bl">◀</button><button id="br">▶</button><button id="bj">跳</button><button id="bh">殺球</button></div>
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d'),ov=document.getElementById('ov');
+const W=800,G=400,NET=400,NT=270,R=30,BR=14,WIN=7;
+const D={easy:{s:3.2,e:90,r:35,sp:.25},normal:{s:4.3,e:40,r:18,sp:.6},hard:{s:5.4,e:10,r:6,sp:.95}};
+let diff='normal',run=false,score=[0,0],P,B,K={},aiT=0,aiX=600,wait=0,flash='';
+function mk(x,tm,n){return{x,y:G,vy:0,vx:0,c:tm?'#1971c2':'#e8590c',tm,n,hx:x,cd:0,sp:false,h:false,t:0,sw:0,act:false,hr:['#3b2a1a','#16181d','#7b4b1d','#c9a227','#4a2c2a','#222'][n%6]}}
+function setAct(){for(let tm=0;tm<2;tm++){const T=P.filter(p=>p.tm===tm),cur=T.find(p=>p.act),own=(B.x<NET)===(tm===0);let best=T[0];T.forEach(p=>{if(Math.abs(p.x-B.x)<Math.abs(best.x-B.x))best=p});if(!cur||(own&&Math.abs(best.x-B.x)+25<Math.abs(cur.x-B.x)))T.forEach(p=>p.act=p===best)}}
+let held=false,sv=0,srv=null,sT=0,sp0=true,sfl=false,ch=0,pw=.5,jT=0;
+function serve(side){sv=side;sfl=false;sp0=true;ch=0;jT=0;P.forEach(p=>{p.x=p.hx;p.y=G;p.vy=0;p.vx=0;p.act=false;p.cd=0});const T=P.filter(p=>p.tm===side);srv=T.reduce((a,b)=>(side?b.x>a.x:b.x<a.x)?b:a);srv.act=true;held=true;sT=40+(Math.random()*40|0);B={x:srv.x,y:srv.y-110,vx:0,vy:0};wait=45}
+function reset(){score=[0,0];P=[];for(let i=0;i<3;i++){P.push(mk(80+i*110,0,i+1));P.push(mk(720-i*110,1,i+1))}serve(0);flash=''}
+document.querySelectorAll('#dr button').forEach(b=>b.onclick=()=>{diff=b.dataset.d;document.querySelectorAll('#dr button').forEach(x=>x.classList.toggle('on',x===b))});
+document.getElementById('go').onclick=()=>{reset();run=true;ov.style.display='none'};
+addEventListener('keydown',e=>{K[e.code]=1;if(['ArrowLeft','ArrowRight','ArrowUp','Space'].includes(e.code))e.preventDefault()});
+addEventListener('keyup',e=>K[e.code]=0);
+[['bl','ArrowLeft'],['br','ArrowRight'],['bj','ArrowUp'],['bh','Space']].forEach(([i,k])=>{const b=document.getElementById(i);
+b.addEventListener('pointerdown',e=>{e.preventDefault();K[k]=1});['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,()=>K[k]=0))});
+function pred(){let b={...B},n=0;while(b.y+BR<G&&n++<400){b.vy+=.32;b.x+=b.vx;b.y+=b.vy;if(b.x<BR||b.x>W-BR){b.vx*=-1;b.x=Math.max(BR,Math.min(W-BR,b.x))}}return b.x}
+function ai(p){const c=D[diff];if(held||sfl)return{l:0,r:0,j:0,h:0};aiT--;
+if(aiT<=0){aiT=c.r;let t=600;if(B.x>NET||(B.vx>.5&&B.x>250))t=pred()+25+(Math.random()-.5)*c.e*2;aiX=Math.max(NET+30,Math.min(W-R,t))}
+const o={l:0,r:0,j:0,h:0},g=p.y>=G;
+if(p.x<aiX-6)o.r=1;else if(p.x>aiX+6)o.l=1;
+if(g&&B.x>NET&&Math.abs(B.x-p.x)<75&&B.y<G-90&&B.y>G-230&&B.vy>0){o.j=1;p.sp=Math.random()<c.sp}
+o.h=!g&&p.sp;return o}
+function inp(i,p){return i?ai(p):{l:K.ArrowLeft||K.KeyA,r:K.ArrowRight||K.KeyD,j:K.ArrowUp||K.KeyW,h:K.Space||K.KeyJ}}
+function upd(){
+if(wait>0){wait--;return}
+setAct();P.forEach(p=>{const i=p.tm,o=p.act?inp(i,p):{l:0,r:0,j:0,h:0},sp=i?D[diff].s:5;
+if(!p.act){const hx=p.hx+((B.x<NET)===!i?(B.x-(i?600:200))*.12:0);if(p.x<hx-4)o.r=1;else if(p.x>hx+4)o.l=1}
+p.vx=(o.r?sp:0)-(o.l?sp:0);
+p.x+=p.vx;const lo=i?NET+4+R:R,hi=i?W-R:NET-4-R;p.x=Math.max(lo,Math.min(hi,p.x));
+if(o.j&&p.y>=G)p.vy=-11.5;p.vy+=.6;p.y+=p.vy;if(p.y>=G){p.y=G;p.vy=0}
+p.h=!!o.h;if(p.cd>0)p.cd--;if(p.sw>0)p.sw--;p.t+=Math.abs(p.vx)*.08;
+const HR=40,cx=p.x,cy=p.y-60,dx=B.x-cx,dy=B.y-cy,d=Math.hypot(dx,dy);
+if(!held&&p.act&&d<HR+BR&&p.cd===0){const nx=dx/d,ny=dy/d;let s=11+(p.h&&p.y<G?4:0);
+B.vx=nx*s+p.vx*.4;B.vy=ny*s-1;if(ny>-.2&&!p.h)B.vy-=2;p.cd=12;p.sw=14;if(sfl){B.vx=(sv?-1:1)*(7+pw*4+Math.random()*.8);B.vy=-9-pw-Math.random()*.6;sfl=false}B.x=cx+nx*(HR+BR);B.y=cy+ny*(HR+BR)}});
+if(held){B.x=srv.x+(sv?-22:22);B.y=srv.y-110;B.vx=B.vy=0;const k=!!(K.Space||K.KeyJ);let go=false;if(sv){go=--sT<=0;if(go)pw=.3+Math.random()*.6}else{if(k&&!sp0&&ch===0)ch=.01;if(ch>0&&k)ch=Math.min(1,ch+.015);if(ch>0&&!k){go=true;pw=ch}}sp0=k;if(go){held=false;sfl=true;ch=0;jT=12;B.vy=-8.5}return}
+if(sfl){if(jT>0&&--jT===0)srv.vy=-11.5;if(jT<=0&&B.vy>0&&srv.y<G-90){B.vx=(sv?-1:1)*(7+pw*4+Math.random()*.8);B.vy=-9-pw-Math.random()*.6;sfl=false;srv.sw=14;srv.cd=12;srv.h=true}}
+B.vy+=.32;const m=Math.hypot(B.vx,B.vy);if(m>15){B.vx*=15/m;B.vy*=15/m}
+B.x+=B.vx;B.y+=B.vy;
+if(B.x<BR){B.x=BR;B.vx*=-1}if(B.x>W-BR){B.x=W-BR;B.vx*=-1}
+if(Math.abs(B.x-NET)<4+BR&&B.y+BR>NT){if(B.y<NT&&B.vy>0){B.y=NT-BR;B.vy=-Math.abs(B.vy)*.7}else{B.x=B.x<NET?NET-4-BR:NET+4+BR;B.vx*=-.8}}
+if(B.y+BR>=G){const w=B.x<NET?1:0;score[w]++;
+if(score[w]>=WIN){run=false;flash=w?'😢 電腦獲勝！':'🏆 你贏了！';ov.querySelector('h1').textContent=flash;ov.querySelector('p').textContent='最終比分 '+score[0]+' : '+score[1]+'，換個難度再戰吧';document.getElementById('go').textContent='再來一局';ov.style.display='flex'}
+else serve(w)}}
+function body(p){const f=p.tm?-1:1,x=p.x,y=p.y,air=y<G-2,run=Math.abs(p.vx)>.1&&!air,s=run?Math.sin(p.t*2)*9:0,sk='#f1c27d',jc=p.c,sc=f>0?'#7a2e05':'#0b3c75',hr=p.hr,lift=air?12:0;
+X.fillStyle='rgba(0,0,0,.28)';X.beginPath();X.ellipse(x,G+5,26-(G-y)*.04,6,0,0,7);X.fill();
+X.lineCap='round';X.lineJoin='round';
+[[-7,s],[7,-s]].forEach(([o,k])=>{const fx=x+o+k,fy=y-4-lift;X.strokeStyle=sk;X.lineWidth=8;X.beginPath();X.moveTo(x+o,y-38);X.lineTo(fx,fy);X.stroke();X.fillStyle='#fff';X.beginPath();X.ellipse(fx+f*3,fy+1,8,4.5,0,0,7);X.fill()});
+X.fillStyle=sc;X.beginPath();X.roundRect(x-14,y-52,28,22,5);X.fill();
+X.fillStyle=jc;X.beginPath();X.roundRect(x-15,y-84,30,36,8);X.fill();
+X.fillStyle='#fff';X.font='bold 16px system-ui';X.textAlign='center';X.fillText(p.n,x,y-60);
+let hx,hy;if(air&&p.h){hx=x+f*12;hy=y-122}else if(air){hx=x+f*8;hy=y-108}else if(p.sw>0){hx=x+f*24;hy=y-84}else if(B&&B.y<G-110&&Math.abs(B.x-x)<90){hx=x+f*6;hy=y-112}else{hx=x+f*18;hy=y-56}
+[-1,1].forEach(a=>{const sx=x+a*12,sy=y-78,tx=hx+a*4,ty=hy;X.strokeStyle=jc;X.lineWidth=10;X.beginPath();X.moveTo(sx,sy);X.lineTo(sx+(tx-sx)*.45,sy+(ty-sy)*.45);X.stroke();X.strokeStyle=sk;X.lineWidth=7;X.beginPath();X.moveTo(sx+(tx-sx)*.4,sy+(ty-sy)*.4);X.lineTo(tx,ty);X.stroke()});
+X.fillStyle=sk;X.beginPath();X.arc(x,y-98,12,0,7);X.fill();
+X.fillStyle=hr;X.beginPath();X.arc(x,y-100,13,Math.PI,0);X.fill();
+X.fillStyle='#fff';X.fillRect(x-13,y-103,26,4);
+X.fillStyle='#111';X.beginPath();X.arc(x+f*5,y-96,1.8,0,7);X.fill();
+if(p.act&&!p.tm){X.fillStyle='#ffd43b';X.beginPath();X.moveTo(x,y-128);X.lineTo(x-7,y-140);X.lineTo(x+7,y-140);X.fill()}}
+function draw(){const g=X.createLinearGradient(0,0,0,G);g.addColorStop(0,'#2b3a67');g.addColorStop(1,'#56688f');X.fillStyle=g;X.fillRect(0,0,W,450);
+for(let i=0;i<5;i++){X.fillStyle='rgba(255,255,255,.13)';X.fillRect(40+i*160,25,100,60)}
+X.fillStyle='#1b2236';X.fillRect(0,250,W,125);
+for(let r=0;r<3;r++)for(let i=0;i<37;i++){const cx=12+i*22+(r%2)*11,cy=285+r*26;X.fillStyle=['#e8590c','#1971c2','#f1c27d','#ced4da','#40c057'][(i*3+r)%5];X.fillRect(cx-6,cy+4,12,10);X.beginPath();X.arc(cx,cy,6,0,7);X.fill()}
+const fg=X.createLinearGradient(0,G,0,450);fg.addColorStop(0,'#e3ad73');fg.addColorStop(1,'#b9803f');X.fillStyle=fg;X.fillRect(0,G-20,W,70);
+X.strokeStyle='rgba(0,0,0,.12)';X.lineWidth=1;for(let i=0;i<W;i+=40){X.beginPath();X.moveTo(i,G-20);X.lineTo(i-12,450);X.stroke()}
+X.fillStyle='#fff';X.fillRect(0,G,W,3);X.fillRect(NET-2,G,4,40);
+X.fillStyle='#ced4da';X.fillRect(NET-3,NT-4,6,G-NT+4);X.fillStyle='rgba(30,30,40,.85)';X.fillRect(NET-4,NT,8,G-NT);
+X.strokeStyle='rgba(255,255,255,.4)';for(let y=NT+10;y<G;y+=10){X.beginPath();X.moveTo(NET-4,y);X.lineTo(NET+4,y);X.stroke()}
+X.fillStyle='#fff';X.fillRect(NET-5,NT,10,7);
+if(P){P.forEach(body);
+const bs=Math.max(.4,1-(G-B.y)/500);X.fillStyle='rgba(0,0,0,.25)';X.beginPath();X.ellipse(B.x,G+5,BR*bs,4*bs,0,0,7);X.fill();
+X.save();X.translate(B.x,B.y);X.rotate(B.x*.05);X.fillStyle='#fff';X.beginPath();X.arc(0,0,BR,0,7);X.fill();X.lineWidth=3;X.strokeStyle='#fab005';X.beginPath();X.arc(0,0,BR-1.5,-.3,1.9);X.stroke();X.strokeStyle='#1c7ed6';X.beginPath();X.arc(0,0,BR-1.5,2.2,4.4);X.stroke();X.strokeStyle='#adb5bd';X.lineWidth=1;X.beginPath();X.arc(0,0,BR,0,7);X.stroke();X.restore();
+X.fillStyle='#fff';X.font='bold 40px system-ui';X.textAlign='center';X.fillText(score[0]+'  :  '+score[1],W/2,50);if(held){X.font='bold 18px system-ui';X.fillText(sv?'電腦發球中…':'你發球：按住空白鍵蓄力，放開後發球',W/2,90);if(!sv){X.fillStyle='rgba(0,0,0,.5)';X.fillRect(W/2-100,105,200,14);X.fillStyle=ch>.75?'#fa5252':'#ffd43b';X.fillRect(W/2-100,105,200*ch,14)}}}}
+let last=0,acc=0;function loop(t){acc+=Math.min(t-last,100);last=t;while(acc>=16.67){acc-=16.67;if(run)upd()}draw();requestAnimationFrame(loop)}
+reset();requestAnimationFrame(t=>{last=t;loop(t)});
+</script></body></html>

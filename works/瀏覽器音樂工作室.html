@@ -1,0 +1,217 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>瀏覽器音樂工作室</title>
+<style>
+:root{--bg:#f4f3f8;--pn:#fff;--tx:#1c1b22;--mu:#6b6980;--ln:#d9d7e5;--bk:#ebe9f3;--ac:#6c4cf1;--hl:#d9ceff;--cell:#fafaff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14131a;--pn:#1d1c26;--tx:#ecebf4;--mu:#9a98b0;--ln:#34324a;--bk:#25243200;--bk:#262535;--ac:#8b72ff;--hl:#3a3270;--cell:#191822}}
+:root[data-theme="dark"]{--bg:#14131a;--pn:#1d1c26;--tx:#ecebf4;--mu:#9a98b0;--ln:#34324a;--bk:#262535;--ac:#8b72ff;--hl:#3a3270;--cell:#191822}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+.w{max-width:1300px;margin:0 auto;padding:12px}h1{font-size:20px;margin:4px 0 10px}
+.bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+label{display:flex;align-items:center;gap:6px;color:var(--mu);font-size:12px}
+select,button,input[type=number]{background:var(--bk);color:var(--tx);border:1px solid var(--ln);border-radius:8px;padding:5px 8px;font:inherit}
+button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600;padding:6px 16px}button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+input[type=range]{accent-color:var(--ac)}
+.main{display:grid;grid-template-columns:260px 1fr;gap:10px}@media(max-width:800px){.main{grid-template-columns:1fr}}
+#tl{display:flex;flex-direction:column;gap:6px}
+.tr{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px;align-items:center;background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:6px 8px;cursor:pointer}
+.tr.s{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac)}.tr input[type=range]{grid-column:1/-1;width:100%}
+#wr{overflow:auto;max-height:68vh;background:var(--pn);border:1px solid var(--ln);border-radius:12px}canvas{display:block;touch-action:none}
+.hint{color:var(--mu);font-size:14px;margin-top:10px}
+body{font-size:16px}button,select{font-size:15px;min-height:40px}label{font-size:14px}h3{font-size:16px;margin:4px 0 8px}button.p{font-size:18px;padding:8px 22px}
+details.g{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:8px 14px;margin-bottom:10px}details.g summary{cursor:pointer;font-weight:700}
+.st{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}.st div{flex:1 1 200px;background:var(--bk);border-radius:10px;padding:8px 12px}
+.in{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:8px;align-items:center}.tr select{min-width:0}
+.gm{background:linear-gradient(135deg,var(--ac),#ec6fa8);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:10px}.gh{display:flex;justify-content:space-between;font-size:18px;font-weight:800}.pb{height:12px;background:#fff4;border-radius:8px;margin:8px 0;overflow:hidden}.pb i{display:block;height:100%;width:0;background:#ffd84d;border-radius:8px;transition:width .5s}.qs{display:flex;flex-wrap:wrap;gap:6px}.q{background:#fff3;border-radius:20px;padding:3px 10px;font-size:13px}.q.d{background:#fff;color:#2a2a35;font-weight:700}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,200%);background:var(--ac);color:#fff;padding:12px 20px;border-radius:30px;font-weight:700;box-shadow:0 6px 20px #0005;transition:transform .35s;z-index:10;max-width:92vw;text-align:center}#toast.on{transform:translate(-50%,0)}
+#pgo{position:fixed;inset:0;z-index:20;background:#0a0818;display:none;justify-content:center;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}#pgo.on{display:flex}#pgc{height:100%;width:min(100%,460px);touch-action:none}#pgx{position:absolute;right:10px;top:calc(8px + env(safe-area-inset-top,0px));z-index:2}#pgs{position:absolute;left:10px;top:calc(8px + env(safe-area-inset-top,0px));z-index:2;max-width:55vw}
+.cf{position:fixed;top:55%;width:9px;height:9px;border-radius:2px;pointer-events:none;z-index:9;animation:cf 1.3s ease-out forwards}@keyframes cf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+</style></head><body><div class="w">
+<h1>🎮 音樂冒險島</h1>
+<details class="g"><summary>📖 怎麼玩？（點一下可以收起來）</summary><div class="st"><div><b>① 選樂器</b><br>左邊每一列是一個樂器，點下拉選單可以換聲音。</div><div><b>② 畫音符</b><br>在右邊方格點一下就有音符，往右拖會變長，再點一下就擦掉。越上面的音越高喔！</div><div><b>③ 按播放</b><br>按「▶ 播放」聽聽看！也可以用電腦鍵盤 A S D F 彈奏。</div></div></details>
+<div class="gm"><div class="gh"><span id="lv"></span><span id="stc"></span></div><div class="pb"><i id="pbi"></i></div><div style="font-size:13px;margin-bottom:6px">🎯 完成任務，拿星星升級！</div><div class="qs" id="qs"></div></div><div id="toast"></div>
+<div id="pgo"><select id="pgs"><option value="">🎼 目前編輯的歌</option><option value="0">💖 甜心閃閃</option><option value="1">😎 Girl Crush</option><option value="2">🌊 夏日海邊</option></select><button id="pgx">✕ 離開</button><canvas id="pgc"></canvas></div>
+<div class="bar">
+<button class="p" id="pl">▶ 播放</button><button id="rc" title="播放時按電腦鍵盤，音符會自動記下來">🔴 錄音</button><button id="pgb" class="p" style="background:#ec6fa8;border-color:#ec6fa8">🎹 鋼琴遊戲</button>
+<label>速度 🐢<input type="range" id="bpm" min="60" max="200" value="100">🐇 <b id="bv">100</b></label>
+<label>音符長短 <select id="ln"><option value="1">很短</option><option value="2" selected>短</option><option value="4">中</option><option value="8">長</option><option value="16">超長</option></select></label>
+<label title="點到不好聽的音，會自動滑到好聽的音">好聽模式 <select id="sc"><option value="none">自由（所有音）</option><option value="pent">開心的音</option><option value="mpent" selected>帥氣的音（推薦）</option><option value="major">大調</option><option value="minor">小調</option><option value="blues">藍調</option></select></label>
+</div>
+<details class="g"><summary>⚙️ 更多設定（可以不用管）</summary><div class="in">
+<label>歌曲長度 <select id="bars"><option value="1">1 段</option><option value="2" selected>2 段</option><option value="3">3 段</option><option value="4">4 段</option></select></label>
+<label>這軌的高低 <select id="oc"></select></label>
+<label>好聽模式的起點 <select id="rt"></select></label>
+<label>回音 <input type="range" id="rv" min="0" max="1" step=".01" value=".25"></label>
+<label>總音量 🔊 <input type="range" id="mv" min="0" max="1" step=".01" value=".8"></label>
+</div></details>
+<div class="bar">
+<button id="demo">🎵 範例歌曲</button><select id="songs"><option value="">💖 K-pop 風格歌曲</option><option value="0">💖 甜心閃閃（可愛風）</option><option value="1">😎 Girl Crush（強勢風）</option><option value="2">🌊 夏日海邊（清爽風）</option></select><button id="clr">🧽 擦掉這一軌</button><button id="clrall">🗑 全部擦掉</button><button id="sv">💾 存起來</button><button id="ld">📂 打開存檔</button><span id="msg" style="color:var(--mu);font-size:14px"></span>
+</div>
+<div class="main"><div><h3>① 選樂器</h3><div id="tl"></div><button id="add" style="margin-top:6px;width:100%">＋ 再加一個樂器</button></div><div><h3>② 在格子裡點一下，畫出音符 👇</h3><div id="wr"><canvas id="cv"></canvas></div></div></div>
+<p class="hint">💡 小提醒：點格子最左邊的琴鍵可以先聽聽看；按空白鍵可以播放或停止；按「🔴 錄音」後再播放，彈電腦鍵盤的音就會自動記下來。</p>
+</div>
+<script>
+const $=id=>document.getElementById(id),NN=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],BLK=[1,3,6,8,10];
+const DN=['踢鼓','小鼓','拍手','閉合 Hi-Hat','開放 Hi-Hat','高音 Tom','低音 Tom','鈸'];
+const SC={none:null,major:[0,2,4,5,7,9,11],minor:[0,2,3,5,7,8,10],pent:[0,2,4,7,9],mpent:[0,3,5,7,10],blues:[0,3,5,6,7,10]};
+const COL=['#e5484d','#3e8bff','#2fb57a','#f0a020','#a855f7','#14b8c4','#ec6fa8','#8aa33a'],KW=62,CW=26;
+const INST={
+piano:{n:'鋼琴',w:[['triangle',1,.6],['sine',2,.25],['sine',3,.1]],a:.004,dec:.9,sus:.12,rel:.3,lp:[9,3]},
+epiano:{n:'電鋼琴',w:[['sine',1,.7]],fm:[1,2.2],a:.004,dec:.9,sus:.2,rel:.3},
+organ:{n:'管風琴',w:[['sine',1,.4],['sine',2,.3],['sine',3,.15],['sine',4,.1]],a:.01,dec:.01,sus:1,rel:.08},
+guitar:{n:'吉他',w:[['sawtooth',1,.45],['triangle',2,.2]],a:.003,dec:.7,sus:.08,rel:.2,lp:[9,1.5]},
+bass:{n:'貝斯',w:[['sawtooth',1,.5],['square',.5,.3]],a:.01,dec:.3,sus:.55,rel:.1,lp:[6,1.5]},
+lead:{n:'合成主音',w:[['sawtooth',1,.3],['square',1,.2,8]],a:.02,dec:.1,sus:.7,rel:.15,lp:[10,5],vib:1},
+pad:{n:'合成鋪底',w:[['sawtooth',1,.2,-12],['sawtooth',1,.2,0],['sawtooth',1,.2,12]],a:.35,dec:.3,sus:.8,rel:.7,lp:[4,4]},
+strings:{n:'弦樂',w:[['sawtooth',1,.25,-7],['sawtooth',1,.25,7]],a:.22,dec:.2,sus:.9,rel:.4,lp:[5,5],vib:1},
+bell:{n:'鈴聲',w:[['sine',1,.6]],fm:[3.5,3],a:.002,dec:1.6,sus:.01,rel:.5},
+marimba:{n:'木琴',w:[['sine',1,.8]],fm:[4,1],a:.002,dec:.3,sus:.01,rel:.1},
+flute:{n:'長笛',w:[['sine',1,.6],['triangle',2,.1]],a:.07,dec:.1,sus:.85,rel:.15,vib:1},
+chip:{n:'8-bit 電玩',w:[['square',1,.25]],a:.003,dec:.05,sus:.6,rel:.04},
+drums:{n:'鼓組',drum:1}};
+let AC,B,S,sel=0,len=2,drag=null,playing=false,rec=false,cur=0,vis=[],vstep=-1,tm,nextT;
+const cv=$('cv'),x=cv.getContext('2d'),wr=$('wr'),mtof=p=>440*Math.pow(2,(p-69)/12),trk=()=>S.tr[sel],isD=T=>!!INST[T.inst].drum;
+function voice(c,out,P,f,t,d,v){
+ const g=c.createGain(),F=c.createBiquadFilter();F.type='lowpass';
+ const pk=v*.5,s=Math.max(P.sus*pk,1e-4),hold=Math.max(t+d,t+P.a+P.dec),end=hold+P.rel;
+ g.gain.setValueAtTime(1e-4,t);g.gain.linearRampToValueAtTime(Math.max(pk,1e-4),t+P.a);g.gain.exponentialRampToValueAtTime(s,t+P.a+P.dec);g.gain.setValueAtTime(s,hold);g.gain.exponentialRampToValueAtTime(1e-4,end);
+ const L=P.lp||[40,40];F.frequency.setValueAtTime(Math.min(f*L[0],18000),t);F.frequency.exponentialRampToValueAtTime(Math.min(f*L[1],18000),t+P.a+P.dec);
+ g.connect(F);F.connect(out);let LG=null;
+ if(P.vib){const l=c.createOscillator();LG=c.createGain();l.frequency.value=5.2;LG.gain.value=14;l.connect(LG);l.start(t);l.stop(end+.05)}
+ for(const [ty,m,gn,dt] of P.w){const o=c.createOscillator(),og=c.createGain();o.type=ty;o.frequency.value=f*m;o.detune.value=dt||0;og.gain.value=gn;
+  if(LG)LG.connect(o.detune);
+  if(P.fm){const mo=c.createOscillator(),mg=c.createGain(),D=P.fm[1]*f*P.fm[0];mo.frequency.value=f*P.fm[0];mg.gain.setValueAtTime(D,t);mg.gain.exponentialRampToValueAtTime(D*.05,t+P.dec);mo.connect(mg);mg.connect(o.frequency);mo.start(t);mo.stop(end+.05)}
+  o.connect(og);og.connect(g);o.start(t);o.stop(end+.05)}}
+function noise(c){if(!c._n){const b=c.createBuffer(1,c.sampleRate*2,c.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;c._n=b}return c._n}
+function drum(c,out,k,t,v){
+ const G=(a,dur)=>{const g=c.createGain();g.gain.setValueAtTime(Math.max(a*v,1e-4),t);g.gain.exponentialRampToValueAtTime(1e-4,t+dur);g.connect(out);return g};
+ const N=(ty,fr,g,dur)=>{const s=c.createBufferSource(),f=c.createBiquadFilter();s.buffer=noise(c);f.type=ty;f.frequency.value=fr;s.connect(f);f.connect(g);s.start(t);s.stop(t+dur+.05)};
+ const T=(f0,f1,g,dur)=>{const o=c.createOscillator();o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur*.6);o.connect(g);o.start(t);o.stop(t+dur+.05)};
+ if(k==0)T(150,42,G(1,.4),.4);
+ else if(k==1){N('highpass',1800,G(.7,.2),.2);T(220,120,G(.5,.12),.12)}
+ else if(k==2)N('bandpass',1500,G(.9,.18),.18);
+ else if(k==3)N('highpass',7500,G(.35,.05),.05);
+ else if(k==4)N('highpass',7500,G(.35,.3),.3);
+ else if(k==5)T(220,110,G(.8,.3),.3);
+ else if(k==6)T(130,60,G(.9,.4),.4);
+ else N('highpass',5000,G(.4,1.2),1.2)}
+function bus(c,wet,vol){
+ const inp=c.createGain(),m=c.createGain(),comp=c.createDynamicsCompressor(),cvl=c.createConvolver(),len=c.sampleRate*1.8|0,ib=c.createBuffer(2,len,c.sampleRate),wg=c.createGain();
+ m.gain.value=vol;for(let ch=0;ch<2;ch++){const d=ib.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5)}
+ cvl.buffer=ib;wg.gain.value=wet;inp.connect(m);inp.connect(cvl);cvl.connect(wg);wg.connect(m);m.connect(comp);comp.connect(c.destination);return{inp,m,wg}}
+function ensure(){if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();B=bus(AC,+$('rv').value,+$('mv').value)}if(AC.state==='suspended')AC.resume()}
+function preview(p,T=trk()){ensure();const P=INST[T.inst];P.drum?drum(AC,B.inp,p,AC.currentTime,T.vol):voice(AC,B.inp,P,mtof(p),AC.currentTime,.4,T.vol)}
+function tick(){const sd=60/S.bpm/4,n=S.bars*16;while(nextT<AC.currentTime+.15){
+ for(const T of S.tr){if(T.mute)continue;const P=INST[T.inst];for(const o of T.notes)if(o.s===cur)P.drum?drum(AC,B.inp,o.p,nextT,T.vol):voice(AC,B.inp,P,mtof(o.p),nextT,o.l*sd,T.vol)}
+ vis.push([nextT,cur]);nextT+=sd;cur=(cur+1)%n}}
+function play(){ensure();playing=true;cur=0;vis=[];nextT=AC.currentTime+.08;clearInterval(tm);tm=setInterval(tick,25);$('pl').textContent='■ 停止';ach('play');requestAnimationFrame(loop)}
+function stop(){playing=false;clearInterval(tm);vstep=-1;$('pl').textContent='▶ 播放';draw()}
+function loop(){if(!playing)return;const t=AC.currentTime;while(vis.length>1&&vis[1][0]<=t)vis.shift();vstep=vis.length&&vis[0][0]<=t?vis[0][1]:-1;
+ if(vstep>=0){const px=KW+vstep*CW;if(px<wr.scrollLeft+KW||px>wr.scrollLeft+wr.clientWidth-CW)wr.scrollLeft=Math.max(0,px-KW)}draw();requestAnimationFrame(loop)}
+function snap(p){const s=SC[$('sc').value];if(!s)return p;const r=+$('rt').value;let k=0;while(!s.includes(((p-r)%12+12)%12)&&k++<12)p--;return p}
+function draw(){
+ const T=trk(),D=isD(T),R=D?8:36,rh=D?34:16,n=S.bars*16,W=KW+n*CW,H=R*rh,dpr=devicePixelRatio||1;
+ if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cv.style.width=W+'px';cv.style.height=H+'px'}
+ x.setTransform(dpr,0,0,dpr,0,0);const cs=getComputedStyle(document.documentElement),g=k=>cs.getPropertyValue(k).trim(),sc=SC[$('sc').value],rt=+$('rt').value;
+ x.clearRect(0,0,W,H);x.font='10px system-ui';x.textBaseline='middle';
+ for(let r=0;r<R;r++){const p=D?r:T.oct+R-1-r,pc=p%12,y=r*rh,bk=!D&&BLK.includes(pc),ins=sc&&!D&&sc.includes(((pc-rt)%12+12)%12);
+  x.fillStyle=bk?g('--bk'):g('--cell');x.fillRect(KW,y,W-KW,rh);
+  if(ins){x.fillStyle=g('--hl');x.globalAlpha=pc==rt?.95:.5;x.fillRect(KW,y,W-KW,rh);x.globalAlpha=1}
+  x.fillStyle=bk?'#2b2a36':g('--pn');x.fillRect(0,y,KW,rh);x.fillStyle=bk?'#c9c7d8':g('--mu');x.fillText(D?DN[r]:NN[pc]+(Math.floor(p/12)-1),6,y+rh/2);
+  x.strokeStyle=g('--ln');x.beginPath();x.moveTo(0,y+.5);x.lineTo(W,y+.5);x.stroke()}
+ x.strokeStyle=g('--ln');for(let i=0;i<=n;i++){x.globalAlpha=i%16==0?1:i%4==0?.9:.35;x.lineWidth=i%16==0?2:1;const px=KW+i*CW+.5;x.beginPath();x.moveTo(px,0);x.lineTo(px,H);x.stroke()}x.globalAlpha=1;x.lineWidth=1;
+ const note=(U,o,a,ac)=>{if(isD(U)!==D||o.s>=n)return;const r=D?o.p:T.oct+R-1-o.p;if(r<0||r>=R)return;x.globalAlpha=a;x.fillStyle=COL[S.tr.indexOf(U)%8];x.fillRect(KW+o.s*CW+1,r*rh+1,o.l*CW-2,rh-2);if(playing&&vstep>=o.s&&vstep<o.s+o.l){x.fillStyle='#fff';x.globalAlpha=.6;x.fillRect(KW+o.s*CW+1,r*rh+1,o.l*CW-2,rh-2)}if(ac){x.strokeStyle='#fff';x.strokeRect(KW+o.s*CW+1.5,r*rh+1.5,o.l*CW-3,rh-3)}x.globalAlpha=1};
+ S.tr.forEach(U=>{if(U!==T)U.notes.forEach(o=>note(U,o,.22))});T.notes.forEach(o=>note(T,o,1,1));
+ if(playing&&vstep>=0){x.fillStyle=g('--ac');x.globalAlpha=.28;x.fillRect(KW+vstep*CW,0,CW,H);x.globalAlpha=1}}
+function pos(e){const r=cv.getBoundingClientRect(),T=trk(),D=isD(T),R=D?8:36,rh=D?34:16,px=e.clientX-r.left,row=Math.floor((e.clientY-r.top)/rh);return{px,D,R,p:D?row:T.oct+R-1-row,s:Math.floor((px-KW)/CW)}}
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{const T=trk(),q=pos(e);if(q.p<0||(q.D&&q.p>7))return;if(q.px<KW){preview(q.p);return}
+ const i=T.notes.findIndex(o=>o.p===q.p&&q.s>=o.s&&q.s<o.s+o.l);if(i>=0){T.notes.splice(i,1);draw();return}
+ const p=q.D?q.p:snap(q.p),o={s:q.s,p,l:q.D?1:Math.min(len,S.bars*16-q.s)};T.notes.push(o);preview(p);drag={o,s:q.s};ach('note1');if(q.D)ach('drum');chk();cv.setPointerCapture(e.pointerId);draw()});
+cv.addEventListener('pointermove',e=>{if(!drag||drag.o.l===undefined||isD(trk()))return;const q=pos(e);drag.o.l=Math.max(1,Math.min(q.s-drag.s+1,S.bars*16-drag.s));if(drag.o.l>1)ach('long');draw()});
+cv.addEventListener('pointerup',()=>drag=null);
+const KM='awsedftgyhujkolp;',EM={piano:'🎹',epiano:'🎹',organ:'⛪',guitar:'🎸',bass:'🎸',lead:'🎛️',pad:'☁️',strings:'🎻',bell:'🔔',marimba:'🪵',flute:'🪈',chip:'👾',drums:'🥁'};
+addEventListener('keydown',e=>{if(gOn)return;if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT'&&e.target.type==='number')return;
+ if(e.code==='Space'){e.preventDefault();playing?stop():play();return}if(e.repeat||e.metaKey||e.ctrlKey)return;
+ const i=KM.indexOf(e.key.toLowerCase());if(i<0)return;const T=trk(),D=isD(T);if(D&&i>7)return;const p=D?i:T.oct+12+i;preview(p);ach('key');
+ if(rec&&playing){const s=Math.max(vstep,0);if(!T.notes.some(o=>o.s===s&&o.p===p)){T.notes.push({s,p,l:D?1:len});ach('rec')}draw()}});
+function renderTracks(){$('tl').innerHTML=S.tr.map((T,i)=>`<div class="tr${i==sel?' s':''}" data-i="${i}"><span style="width:10px;height:10px;border-radius:50%;background:${COL[i%8]}"></span><select data-k="inst">${Object.entries(INST).map(([k,v])=>`<option value="${k}"${k==T.inst?' selected':''}>${EM[k]} ${v.n}</option>`).join('')}</select><button data-a="m" title="靜音" class="${T.mute?'on':''}">${T.mute?'🔇':'🔊'}</button><button data-a="x" title="刪除這個樂器">🗑</button><input type="range" min="0" max="1" step=".01" value="${T.vol}" data-k="vol"></div>`).join('')}
+const sync=()=>{$('oc').value=trk().oct;$('oc').disabled=isD(trk())};
+function refresh(){$('bpm').value=S.bpm;$('bv').textContent=S.bpm;$('bars').value=S.bars;sync();renderTracks();draw()}
+$('tl').onclick=e=>{const r=e.target.closest('.tr');if(!r)return;const i=+r.dataset.i,a=e.target.dataset.a;
+ if(a==='m')S.tr[i].mute=!S.tr[i].mute;else if(a==='x'){if(S.tr.length>1){S.tr.splice(i,1);sel=Math.min(sel,S.tr.length-1)}}else if(e.target.tagName!=='SELECT'&&e.target.tagName!=='INPUT')sel=i;else return;
+ renderTracks();sync();draw()};
+$('tl').addEventListener('input',e=>{if(e.target.dataset.k==='vol')S.tr[+e.target.closest('.tr').dataset.i].vol=+e.target.value});
+$('tl').addEventListener('change',e=>{if(e.target.dataset.k!=='inst')return;const i=+e.target.closest('.tr').dataset.i,T=S.tr[i],was=isD(T);T.inst=e.target.value;if(was!==isD(T))T.notes=[];sel=i;renderTracks();sync();draw();preview(isD(T)?0:60,T);ach('inst')});
+$('add').onclick=()=>{if(S.tr.length>=8)return;S.tr.push(mk('piano',48,[]));sel=S.tr.length-1;renderTracks();sync();draw()};
+$('pl').onclick=()=>playing?stop():play();
+$('rc').onclick=()=>{rec=!rec;$('rc').classList.toggle('on',rec)};
+$('bpm').oninput=e=>{S.bpm=+e.target.value;$('bv').textContent=S.bpm};
+$('bars').onchange=e=>{S.bars=+e.target.value;draw()};$('ln').onchange=e=>len=+e.target.value;
+$('oc').onchange=e=>{trk().oct=+e.target.value;draw()};$('sc').onchange=$('rt').onchange=draw;
+$('rv').oninput=e=>B&&(B.wg.gain.value=+e.target.value);$('mv').oninput=e=>B&&(B.m.gain.value=+e.target.value);
+$('clr').onclick=()=>{trk().notes=[];draw()};$('clrall').onclick=()=>{S.tr.forEach(T=>T.notes=[]);draw()};$('demo').onclick=()=>{demo()};
+const msg=t=>{$('msg').textContent=t;setTimeout(()=>$('msg').textContent='',2500)};
+$('sv').onclick=()=>{try{localStorage.setItem('ms1',JSON.stringify(S));msg('已儲存');ach('save')}catch(e){msg('此環境無法儲存')}};
+$('ld').onclick=()=>{try{const d=localStorage.getItem('ms1');if(!d)return msg('沒有已儲存的作品');S=JSON.parse(d);sel=0;refresh();msg('已讀取')}catch(e){msg('讀取失敗')}};
+$('oc').innerHTML=[[24,'很低'],[36,'低'],[48,'中'],[60,'高'],[72,'很高']].map(([b,n])=>`<option value="${b}">${n}</option>`).join('');
+$('rt').innerHTML=NN.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
+const mk=(inst,oct,notes,vol=.8)=>({inst,oct,vol,mute:false,notes:notes.map(([s,p,l])=>({s,p,l}))});
+function demo(){const dk=[];[0,8,16,22,24].forEach(s=>dk.push([s,0,1]));[4,12,20,28].forEach(s=>dk.push([s,1,1]));for(let s=0;s<32;s+=2)dk.push([s,3,1]);dk.push([30,4,1]);
+ const bs=[[0,36,3],[4,36,2],[8,34,3],[12,34,2],[16,32,3],[20,32,2],[24,31,3],[28,31,2]],pd=[];
+ [[60,63,67],[58,62,65],[56,60,63],[55,59,62]].forEach((c,i)=>c.forEach(p=>pd.push([i*8,p,8])));
+ const ld=[[0,67,2],[2,70,2],[4,72,4],[8,70,2],[10,67,2],[12,65,4],[16,63,2],[18,65,2],[20,67,4],[24,62,4],[28,67,4]];
+ S={bpm:100,bars:2,tr:[mk('drums',0,dk,.9),mk('bass',24,bs,.9),mk('pad',48,pd,.5),mk('lead',60,ld,.7)]};sel=3;refresh();wr.scrollTop=0}
+const Q=[['note1','🎵','點一下格子，放第一個音符'],['play','▶️','按下播放，聽聽你的音樂'],['note8','🎶','自己放滿 8 個音符'],['long','📏','把音符往右拖長'],['inst','🎸','換一個新的樂器聲音'],['drum','🥁','在鼓組畫出節奏'],['key','⌨️','用電腦鍵盤彈一個音'],['rec','🔴','錄音：播放時彈鍵盤'],['save','💾','把作品存起來']];
+const LV=[[0,'🌱 音樂小新手'],[2,'🐣 節奏學徒'],[4,'🎧 旋律小達人'],[6,'🎸 搖滾新星'],[8,'🎼 作曲家'],[10,'👑 音樂大師']];
+let done={},added=0,tt;try{done=JSON.parse(localStorage.getItem('msq')||'{}')}catch(e){}
+function qr(){const n=Q.filter(q=>done[q[0]]).length,lv=[...LV].reverse().find(l=>n>=l[0]);$('lv').textContent=lv[1];$('stc').textContent='⭐ '+n+' / '+Q.length;$('pbi').style.width=n/Q.length*100+'%';$('qs').innerHTML=Q.map(q=>`<span class="q${done[q[0]]?' d':''}">${done[q[0]]?'✅':q[1]} ${q[2]}</span>`).join('')}
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),3200)}
+function boom(){const C=['#e5484d','#3e8bff','#2fb57a','#f0a020','#a855f7','#ec6fa8'];for(let i=0;i<28;i++){const s=document.createElement('i');s.className='cf';s.style.cssText=`left:${40+Math.random()*20}%;background:${C[i%6]};--dx:${Math.random()*500-250}px;--dy:${-80-Math.random()*420}px;--r:${Math.random()*720}deg`;document.body.appendChild(s);setTimeout(()=>s.remove(),1400)}}
+function jingle(){try{ensure();[72,76,79,84].forEach((p,i)=>voice(AC,B.inp,INST.bell,mtof(p),AC.currentTime+i*.09,.2,.7))}catch(e){}}
+function ach(id){if(done[id])return;done[id]=1;try{localStorage.setItem('msq',JSON.stringify(done))}catch(e){}qr();const q=Q.find(q=>q[0]===id);toast('🎉 任務完成：'+q[2]+' ⭐+1'+(Object.keys(done).length>=Q.length?'　你是音樂大師！👑':''));boom();jingle()}
+function chk(){if(++added>=8)ach('note8')}
+function song(bpm,ch,br,mel,o){const dk=[],pd=[],bs=[],ar=[];
+for(let b=0;b<4;b++){const z=b*16;
+for(let s=0;s<16;s+=4)dk.push([z+s,0,1]);dk.push([z+4,1,1],[z+4,2,1],[z+12,1,1],[z+12,2,1]);
+for(let s=1;s<16;s+=2)dk.push([z+s,3,1]);for(let s=2;s<16;s+=4)dk.push([z+s,4,1]);
+ch[b].forEach(p=>pd.push([z,p,16]));o.bp.forEach(s=>bs.push([z+s,br[b],2]));
+for(let s=0;s<16;s+=2)ar.push([z+s,ch[b][(s/2)%3]+12,1])}
+S={bpm,bars:4,tr:[mk('drums',0,dk,.85),mk('bass',24,bs,.85),mk(o.pad,48,pd,.45),mk(o.lead,60,mel,.75),mk(o.ex,60,ar,.4)]};sel=3;$('sc').value=o.sc;$('rt').value=o.rt;refresh();wr.scrollTop=0}
+const SG=[
+()=>song(124,[[57,60,65],[59,62,67],[59,64,67],[57,60,64]],[41,43,40,45],[[0,72,2],[2,72,1],[3,74,1],[4,76,3],[8,72,2],[10,69,2],[12,72,4],[16,74,2],[18,74,1],[19,76,1],[20,77,3],[24,74,2],[26,71,2],[28,74,4],[32,76,2],[34,76,1],[35,79,1],[36,79,3],[40,76,2],[42,74,2],[44,71,4],[48,72,2],[50,76,2],[52,81,2],[54,79,2],[56,76,4],[60,72,4]],{bp:[0,3,6,8,11,14],pad:'strings',lead:'lead',ex:'bell',sc:'pent',rt:0}),
+()=>song(108,[[57,60,64],[57,60,65],[55,60,64],[55,59,62]],[45,41,48,43],[[0,69,1],[1,69,1],[3,72,2],[6,69,1],[8,67,2],[10,64,2],[12,69,3],[16,69,1],[17,69,1],[19,72,2],[22,77,1],[24,76,2],[26,72,2],[28,69,3],[32,72,1],[33,72,1],[35,76,2],[38,72,1],[40,79,2],[42,76,2],[44,72,3],[48,74,1],[49,74,1],[51,71,2],[54,74,1],[56,67,2],[58,71,2],[60,74,4]],{bp:[0,6,10],pad:'strings',lead:'chip',ex:'marimba',sc:'mpent',rt:9}),
+()=>song(118,[[55,59,62],[57,62,66],[55,59,64],[55,60,64]],[43,38,40,36],[[0,71,2],[2,74,2],[4,79,4],[8,78,2],[10,74,2],[12,71,4],[16,69,2],[18,74,2],[20,78,4],[24,76,2],[26,74,2],[28,69,4],[32,71,2],[34,76,2],[36,79,4],[40,76,2],[42,71,2],[44,67,4],[48,72,2],[50,76,2],[52,79,2],[54,76,2],[56,72,6],[62,76,2]],{bp:[0,3,6,8,11,14],pad:'pad',lead:'flute',ex:'guitar',sc:'pent',rt:7})];
+$('songs').onchange=e=>{if(e.target.value==='')return;if(playing)stop();SG[+e.target.value]();e.target.value='';play()};
+Q.push(['game','🎹','玩一次鋼琴遊戲']);
+var gOn=false;
+const pgc=$('pgc'),pg=pgc.getContext('2d'),LC=['#ff5d8f','#ffb347','#4cd9a3','#5db7ff'];
+let gst='ready',gl=[],gT=null,gOld=false,gmu=false,g0=0,gsc=0,gcb=0,gmx=0,gn=[0,0,0],gp=[],gW=0,gH=0,gdp=1;
+const gsd=()=>60/S.bpm/4,gV=()=>gH*.42,gHY=()=>gH*.8;
+function gtr(){const T=trk();return isD(T)?S.tr.find(t=>!isD(t))||T:T}
+function gbuild(){gT=gtr();const m=new Map();gT.notes.forEach(o=>{if(o.s<S.bars*16&&(!m.has(o.s)||m.get(o.s).p<o.p))m.set(o.s,o)});const ns=[...m.values()].sort((a,b)=>a.s-b.s),ps=[...new Set(ns.map(o=>o.p))].sort((a,b)=>a-b);gl=ns.map(o=>({s:o.s,p:o.p,l:o.l,ln:Math.min(3,Math.floor(ps.indexOf(o.p)/ps.length*4)),st:0}));gsc=gcb=gmx=0;gn=[0,0,0];gp=[];gst='ready'}
+function gsize(){const r=pgc.getBoundingClientRect();gdp=devicePixelRatio||1;gW=r.width;gH=r.height;pgc.width=Math.round(gW*gdp);pgc.height=Math.round(gH*gdp)}
+function grest(){if(gmu){gT.mute=gOld;gmu=false;renderTracks()}}
+function gopen(){ensure();if(playing)stop();gOn=true;$('pgo').classList.add('on');gsize();gbuild();gloop()}
+function gclose(){gOn=false;$('pgo').classList.remove('on');if(playing)stop();grest()}
+function gstart(){ensure();gbuild();gOld=gT.mute;gT.mute=true;gmu=true;gst='play';cur=0;vis=[];g0=AC.currentTime+2.4;nextT=g0;playing=true;clearInterval(tm);tm=setInterval(tick,25);$('pl').textContent='■ 停止'}
+function gfinish(){stop();grest();gst='end';ach('game')}
+function ghit(ln){if(gst!=='play')return;const now=AC.currentTime,sd=gsd();let b=null,bd=9;for(const o of gl){if(o.st||o.ln!==ln)continue;const d=Math.abs(now-(g0+o.s*sd));if(d<.26&&d<bd){b=o;bd=d}}
+if(!b)return;b.st=bd<.1?1:2;gn[b.st-1]++;gcb++;gmx=Math.max(gmx,gcb);gsc+=(b.st==1?100:60)+gcb*2;voice(AC,B.inp,INST[gT.inst],mtof(b.p),now,Math.max(.15,b.l*sd),gT.vol);gp.push([b.st==1?'Perfect!':'Good',b.st==1?'#ffd84d':'#7ee0ff',now,ln])}
+function gloop(){if(!gOn)return;gdraw();requestAnimationFrame(gloop)}
+function gdraw(){const g=pg,W=gW,H=gH,lw=W/4,V=gV(),HY=gHY(),sd=gsd(),now=AC.currentTime,T=(s,y,z,c)=>{g.font='bold '+z+'px system-ui';g.fillStyle=c;g.fillText(s,W/2,y)};
+g.setTransform(gdp,0,0,gdp,0,0);g.fillStyle='#0f0c1f';g.fillRect(0,0,W,H);for(let i=0;i<4;i++){g.fillStyle=i%2?'#161230':'#1d1740';g.fillRect(i*lw,0,lw,H)}
+g.fillStyle='#ffd84d33';g.fillRect(0,HY-.2*V,W,.4*V);g.fillStyle='#ffd84d';g.fillRect(0,HY-2,W,4);g.textAlign='center';g.textBaseline='middle';
+if(gst==='play'){for(const o of gl)if(!o.st&&now>g0+o.s*sd+.26){o.st=3;gn[2]++;gcb=0;gp.push(['Miss','#ff7b7b',now,o.ln])}if(now>g0+S.bars*16*sd+.6)gfinish()}
+if(gst==='play')for(const o of gl){const bt=HY-(g0+o.s*sd-now)*V,h=Math.max(o.l*sd*V-4,44),tp=bt-h;if(bt<0||tp>H)continue;g.globalAlpha=o.st==1||o.st==2?.25:o.st==3?.35:1;g.fillStyle=o.st==3?'#777':LC[o.ln];g.fillRect(o.ln*lw+5,tp,lw-10,h);g.globalAlpha=1;if(!o.st)T(NN[o.p%12],bt-14,14,'#fff')}
+gp=gp.filter(p=>now-p[2]<.7);for(const p of gp){const a=now-p[2];g.globalAlpha=1-a/.7;T(p[0],HY-40-a*60,22,p[1]);g.globalAlpha=1}
+if(gst==='play'){T(gsc,52,30,'#fff');if(gcb>1)T(gcb+' 連擊！',82,18,'#ffd84d');const p=Math.max(0,(now-g0)/(S.bars*16*sd));g.fillStyle='#ffffff22';g.fillRect(0,0,W,5);g.fillStyle='#ffd84d';g.fillRect(0,0,W*Math.min(1,p),5);if(now<g0)T(Math.ceil((g0-now)/.8),H*.4,64,'#fff')}
+if(gst!=='play'){g.fillStyle='#0a0818cc';g.fillRect(0,0,W,H);
+if(gst==='ready'){T('🎹 鋼琴遊戲',H*.3,34,'#fff');T('方塊掉到黃線時，就點一下那一排！',H*.4,16,'#d9d4ff');T('點到的音會自己發出聲音。電腦也可以按 D F J K',H*.46,14,'#a9a3d6');T('樂器：'+INST[gT.inst].n+'　方塊數：'+gl.length,H*.54,16,'#ffd84d');T('👆 點一下開始',H*.66,26,now%1<.5?'#fff':'#ffd84d')}
+else{const a=(gn[0]+gn[1]*.7)/Math.max(1,gl.length),s=a>=.9?3:a>=.7?2:a>=.4?1:0;T('⭐'.repeat(s)+'☆'.repeat(3-s),H*.28,44,'#ffd84d');T('分數 '+gsc,H*.4,30,'#fff');T('Perfect '+gn[0]+'　Good '+gn[1]+'　Miss '+gn[2],H*.48,16,'#d9d4ff');T('最高連擊 '+gmx,H*.54,16,'#d9d4ff');T(s==3?'太強了！🎉':s>=1?'很棒！再試試看！':'沒關係，再來一次！',H*.62,20,'#fff');T('👆 點一下再玩一次',H*.72,22,now%1<.5?'#fff':'#ffd84d')}}}
+pgc.addEventListener('pointerdown',e=>{e.preventDefault();ensure();if(gst==='play'){const r=pgc.getBoundingClientRect();ghit(Math.min(3,Math.max(0,Math.floor((e.clientX-r.left)/r.width*4))))}else if(gst==='ready')gstart();else gbuild()});
+addEventListener('keydown',e=>{if(!gOn||e.repeat)return;if(e.key==='Escape'){gclose();return}const i='dfjk'.indexOf(e.key.toLowerCase()),n=/^[1-4]$/.test(e.key)?+e.key-1:i;if(gst==='play'&&n>=0)ghit(n);else if(gst==='ready'&&(e.code==='Space'||n>=0))gstart();else if(gst==='end'&&e.code==='Space')gbuild()});
+$('pgs').onchange=e=>{const v=e.target.value;if(playing)stop();grest();if(v!=='')SG[+v]();gbuild()};
+$('pgb').onclick=gopen;$('pgx').onclick=gclose;addEventListener('resize',()=>{if(gOn)gsize()});
+qr();
+demo();
+</script></body></html>

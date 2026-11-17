@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>動物系朋友夾娃娃機</title>
+<style>
+:root{--bg:#fff8ef;--card:#fff;--text:#2b2430;--sub:#6e6475;--accent:#ff7a59;--line:#f0e3d4;--chip:#fff1e3;--glass:#eaf6ff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1822;--card:#27212f;--text:#f4eef8;--sub:#b7aac0;--accent:#ff8f70;--line:#3a3245;--chip:#33293d;--glass:#2b3a4a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1c1822;--card:#27212f;--text:#f4eef8;--sub:#b7aac0;--accent:#ff8f70;--line:#3a3245;--chip:#33293d;--glass:#2b3a4a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;line-height:1.6;display:flex;justify-content:center;touch-action:manipulation}
+main{width:100%;max-width:440px;padding:20px 14px 36px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px 18px;box-shadow:0 8px 30px rgba(0,0,0,.06);animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+h1{font-size:25px;margin:4px 0 6px;line-height:1.3}
+p{margin:0 0 12px;color:var(--sub)}
+.center{text-align:center}
+.big{font-size:60px;text-align:center}
+button{font:inherit;cursor:pointer;user-select:none;-webkit-user-select:none}
+.btn{display:block;width:100%;background:var(--accent);color:#fff;border:0;border-radius:14px;padding:13px;font-weight:700;font-size:18px;margin-top:10px}
+.btn.ghost{background:var(--chip);color:var(--text);border:1px solid var(--line)}
+.meta{font-size:14px;color:var(--sub);min-height:22px;margin-top:8px;text-align:center}
+.tag{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:99px;padding:3px 12px;font-size:13px;margin:0 6px 6px 0}
+.box{background:var(--chip);border-radius:14px;padding:14px 16px;margin:14px 0}
+.box b{display:block}.box span{color:var(--sub);font-size:15px}
+.machine{position:relative;height:360px;border:6px solid var(--accent);border-radius:20px;background:linear-gradient(180deg,var(--glass),var(--card));overflow:hidden;margin-top:10px}
+.rail{position:absolute;top:0;left:0;right:0;height:14px;background:var(--line)}
+.claw{position:absolute;top:14px;left:50%;width:0}
+.claw.slow{transition:left 1.1s ease-in-out}
+.rope{width:3px;height:20px;margin-left:-1.5px;background:#8a8a8a;transition:height 1s ease-in-out}
+.head{position:relative;width:34px;height:20px;margin-left:-17px;background:var(--accent);border-radius:8px 8px 4px 4px}
+.pr{position:absolute;top:14px;width:5px;height:22px;background:#9a9a9a;border-radius:3px;transform-origin:top center;transition:transform .35s}
+.pr.l{left:2px;transform:rotate(25deg)}.pr.r{right:2px;transform:rotate(-25deg)}
+.closed .pr.l{transform:rotate(-12deg)}.closed .pr.r{transform:rotate(12deg)}
+.ball{position:absolute;width:40px;height:40px;margin-left:-20px;border-radius:50%;border:2px solid rgba(0,0,0,.18);background:linear-gradient(180deg,var(--c) 50%,#fff 50%);box-shadow:inset -4px -4px 0 rgba(0,0,0,.08)}
+.ball::after{content:"";position:absolute;left:7px;top:6px;width:9px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);transform:rotate(-30deg)}
+.ball.held{left:50%!important;top:28px!important;bottom:auto!important}
+.chute{position:absolute;left:0;bottom:0;width:22%;height:58px;background:rgba(0,0,0,.35);border-top-right-radius:14px;color:#fff;font-size:12px;text-align:center;padding-top:34px}
+.ctrl{display:flex;gap:10px;margin-top:14px;align-items:stretch}
+.ctrl .btn{margin:0;flex:1}
+.cb{width:64px;border:0;border-radius:14px;background:var(--chip);color:var(--text);font-size:24px;border:1px solid var(--line)}
+.cb:active{background:var(--accent);color:#fff}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;color:#fff;font-size:18px;gap:16px}
+.bigball{width:140px;height:140px;border-radius:50%;border:4px solid rgba(0,0,0,.2);background:linear-gradient(180deg,var(--c) 50%,#fff 50%);animation:wob 1.2s ease-in-out infinite;cursor:pointer}
+.bigball.shake{animation:shk .7s}
+@keyframes wob{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg) scale(1.05)}}
+@keyframes shk{0%{transform:rotate(0)}15%{transform:rotate(-18deg)}30%{transform:rotate(18deg)}45%{transform:rotate(-22deg)}60%{transform:rotate(22deg)}80%{transform:scale(1.3)}100%{transform:scale(0);opacity:0}}
+.ed label{display:block;font-size:13px;color:var(--sub);margin:6px 0 2px}.ed input,.ed textarea{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}.ed .pz{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px}.ed textarea{height:84px;resize:vertical}
+.cab{background:#a9733f;border:7px solid #7a4e26;border-radius:14px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(340px,90vw);box-shadow:0 10px 30px rgba(0,0,0,.4)}.it{background:rgba(255,255,255,.88);color:#2b2430;border:0;border-bottom:9px solid #7a4e26;border-radius:8px;padding:12px 4px 8px;font-size:14px;line-height:1.3}.it span{display:block;font-size:46px;line-height:1.2}.it:active{background:#ffe3c9}
+</style>
+</head>
+<body>
+<main><div id="app"></div></main>
+<script>
+var TYPES={
+sun:{e:"🐶",n:"黃金獵犬型・快樂製造機",tags:["氣氛擔當","熱情","社交王"],d:"你就像黃金獵犬，熱情又親人。走到哪裡，哪裡就有笑聲。朋友心情低落時第一個想到你，因為你總能用一句玩笑把烏雲趕走。偶爾也別忘了給自己留點安靜的時間。",m:"moon",mt:"貓頭鷹型的深夜知己會懂你笑容背後的細膩。"},
+moon:{e:"🦉",n:"貓頭鷹型・深夜知己",tags:["懂你","細膩","有深度"],d:"你就像貓頭鷹，安靜卻看得透徹。話不一定多，但每一句都說到心坎裡。朋友有真心話只想對你說，因為你不評判、不洩漏，還會記得他隨口提過的小事。",m:"sun",mt:"黃金獵犬型的朋友能把你拉出舒適圈，帶你認識更多有趣的人。"},
+forest:{e:"🐻",n:"大熊型・療癒避風港",tags:["穩定","可靠","包容"],d:"你就像一隻溫暖的大熊，待在你身邊，人會自然放鬆下來。你不愛爭，也不愛湊熱鬧，但永遠在需要時出現，默默為朋友遮風擋雨。記得也要讓別人照顧你一次。",m:"rocket",mt:"獵豹型的行動派會帶你嘗試新鮮事，讓你的世界更寬廣。"},
+rocket:{e:"🐆",n:"獵豹型・冒險行動派",tags:["說走就走","點子王","有魄力"],d:"你就像獵豹，說動就動。「要不要去？」永遠是你的開場白。你敢想也敢做，朋友的人生因為你多了不少精彩回憶。偶爾放慢一點，就能照顧到更多人的感受。",m:"forest",mt:"大熊型的穩重朋友會成為你衝刺時最安心的後盾。"}
+};
+var IDS=Object.keys(TYPES),COLORS=["#ff7a59","#ffc145","#43b89c","#5b7cff","#b86bff","#ff5f9e"];
+var app=document.getElementById("app"),x=50,busy=false,tries=0,balls=[],holdT=null;
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+function loadP(){try{var s=localStorage.getItem("clawPrizes");if(s){var o=JSON.parse(s);IDS.forEach(function(k){if(o[k]){TYPES[k].e=o[k].e||TYPES[k].e;TYPES[k].n=o[k].n||TYPES[k].n;TYPES[k].d=o[k].d||TYPES[k].d}})}}catch(e){}}
+function saveP(){var o={};IDS.forEach(function(k){o[k]={e:TYPES[k].e,n:TYPES[k].n,d:TYPES[k].d}});try{localStorage.setItem("clawPrizes",JSON.stringify(o))}catch(e){}}
+function editor(){var h='<div class="card ed"><div class="center"><h1>✏️ 編輯獎品</h1><p>改成你想要的獎品，儲存後夾出來就是新獎品。</p></div>';
+IDS.forEach(function(k){var t=TYPES[k];h+='<div class="pz"><label>圖示（emoji）</label><input data-k="'+k+'" data-f="e" value="'+esc(t.e)+'" maxlength="4"><label>獎品名稱</label><input data-k="'+k+'" data-f="n" value="'+esc(t.n)+'" maxlength="30"><label>說明</label><textarea data-k="'+k+'" data-f="d">'+esc(t.d)+'</textarea></div>'});
+h+='<button class="btn" id="sv">儲存獎品</button><button class="btn ghost" id="rs">還原預設</button><button class="btn ghost" id="bk">返回</button></div>';
+app.innerHTML=h;
+$("sv").onclick=function(){[].forEach.call(app.querySelectorAll("[data-k]"),function(el){var v=el.value.trim();if(v)TYPES[el.dataset.k][el.dataset.f]=v});saveP();play()};
+$("rs").onclick=function(){try{localStorage.removeItem("clawPrizes")}catch(e){}history.replaceState(null,"",location.pathname+location.search);location.reload()};
+$("bk").onclick=play}
+function sleep(t){return new Promise(function(r){setTimeout(r,t)})}
+function toast(s){var e=$("tr");if(e)e.textContent=s}
+function setX(v){x=Math.max(8,Math.min(92,v));$("cl").style.left=x+"%"}
+function build(){var bl=$("bl");bl.innerHTML="";balls=[];var ts=[],i;
+for(i=0;i<12;i++)ts.push(IDS[i%4]);ts.sort(function(){return Math.random()-.5});
+for(i=0;i<12;i++){var row=i%2,col=Math.floor(i/2),px=28+col*12.4+(row?3:-1)+(Math.random()*2-1)*1.2;
+var el=document.createElement("div");el.className="ball";el.style.setProperty("--c",COLORS[Math.floor(Math.random()*COLORS.length)]);
+el.style.left=px+"%";el.style.bottom=(row?30:6)+"px";bl.appendChild(el);balls.push({el:el,x:px,t:ts[i]})}}
+function play(){history.replaceState(null,"",location.pathname+location.search);busy=false;tries=0;x=50;
+app.innerHTML='<div class="card"><div class="center"><h1>🐾 動物系朋友夾夾樂</h1><p>移動爪子，夾出一顆扭蛋，打開看看你是哪一種動物！</p></div><div class="machine" id="m"><div class="rail"></div><div class="claw" id="cl"><div class="rope" id="rp"></div><div class="head" id="hd"><span class="pr l"></span><span class="pr r"></span></div></div><div id="bl"></div><div class="chute">出口</div></div><div class="ctrl"><button class="cb" id="lf">◀</button><button class="btn" id="gr">夾！</button><button class="cb" id="rg">▶</button></div><div class="meta" id="tr">按住左右鍵移動，對準扭蛋再按「夾！」</div><button class="btn ghost" id="ed" style="font-size:15px;padding:10px">✏️ 編輯獎品</button></div>';
+build();setX(50);
+$("gr").onclick=grab;$("ed").onclick=editor;hold($("lf"),-1);hold($("rg"),1)}
+function hold(b,d){function st(e){e.preventDefault();stop();holdT=setInterval(function(){if(!busy)setX(x+d*.9)},25)}
+b.addEventListener("pointerdown",st);["pointerup","pointerleave","pointercancel"].forEach(function(k){b.addEventListener(k,stop)})}
+function stop(){clearInterval(holdT)}
+document.addEventListener("keydown",function(e){if(!$("cl")||busy)return;
+if(e.key==="ArrowLeft")setX(x-2.5);else if(e.key==="ArrowRight")setX(x+2.5);else if(e.key===" "||e.key==="Enter"){if(!document.querySelector(".ov")){e.preventDefault();grab()}}});
+function release(b){var m=$("m"),r=b.el.getBoundingClientRect(),mr=m.getBoundingClientRect();
+b.el.classList.remove("held");b.el.style.left=(r.left+r.width/2-mr.left)+"px";b.el.style.top=(r.top-mr.top)+"px";b.el.style.bottom="auto";
+m.appendChild(b.el);b.el.style.transition="top .6s cubic-bezier(.5,0,1,.6)";b.el.offsetWidth;b.el.style.top=(m.clientHeight-52)+"px"}
+async function grab(){if(busy)return;busy=true;tries++;toast("夾夾夾……");
+var cl=$("cl"),rp=$("rp"),hd=$("hd"),best=null,bd=99;
+rp.style.height="236px";await sleep(1000);
+balls.forEach(function(b){var d=Math.abs(b.x-x);if(d<bd){bd=d;best=b}});
+hd.classList.add("closed");await sleep(450);
+var ok=best&&bd<5;
+if(ok){best.el.style.left="";best.el.style.top="";hd.appendChild(best.el);best.el.classList.add("held")}
+rp.style.height="20px";await sleep(1000);
+if(!ok){hd.classList.remove("closed");toast("差一點！第 "+tries+" 次，再試一次");busy=false;return}
+var slip=Math.random()<.2;
+cl.classList.add("slow");cl.style.left="12%";
+if(slip){await sleep(500);var mr=$("m").getBoundingClientRect(),r=best.el.getBoundingClientRect();
+best.x=(r.left+r.width/2-mr.left)/mr.width*100;release(best);await sleep(700);
+x=12;cl.classList.remove("slow");hd.classList.remove("closed");toast("哎呀，掉了！再試一次");busy=false;return}
+await sleep(1200);hd.classList.remove("closed");release(best);await sleep(800);
+balls.splice(balls.indexOf(best),1);best.el.remove();
+x=12;cl.classList.remove("slow");toast("");prize(best);}
+function cabinet(o,b){o.style.display="none";var c=document.createElement("div");c.className="ov";
+var h='<div>🗄️ 獎品櫃：挑一個你最想要的</div><div class="cab">';
+IDS.forEach(function(k){h+='<button class="it" data-k="'+k+'"><span>'+esc(TYPES[k].e)+'</span>'+esc(TYPES[k].n.split("・")[0])+'</button>'});
+c.innerHTML=h+'</div><button class="btn ghost" id="cb" style="width:auto;padding:10px 26px;margin:0">返回</button>';
+document.body.appendChild(c);
+$("cb").onclick=function(){c.remove();o.style.display="flex"};
+[].forEach.call(c.querySelectorAll(".it"),function(el){el.onclick=function(){var k=el.dataset.k;c.remove();o.remove();location.hash="result-"+k;show(k,true)}})}
+function prize(b){var o=document.createElement("div"),sw=0;o.className="ov";
+o.innerHTML='<div>🎉 夾到了！第 '+tries+' 次成功</div><div class="bigball" id="bb" style="--c:'+b.el.style.getPropertyValue("--c")+'"></div><div>點一下打開扭蛋</div><button class="btn ghost" id="sw" style="width:auto;padding:10px 22px;margin:0">🗄️ 去獎品櫃挑選</button>';
+document.body.appendChild(o);
+$("sw").onclick=function(){cabinet(o,b)};
+$("bb").onclick=async function(){this.classList.add("shake");await sleep(700);o.remove();location.hash="result-"+b.t;show(b.t,true)}}
+function show(id,mine){var t=TYPES[id],m=TYPES[t.m],tg="";
+t.tags.forEach(function(s){tg+='<span class="tag">#'+s+'</span>'});
+app.innerHTML='<div class="card"><div class="center"><div class="meta">'+(mine?"你夾到的是……":"朋友夾到的是……")+'</div><div class="big">'+t.e+'</div><h1>'+t.n+'</h1><div>'+tg+'</div></div><p style="margin-top:12px">'+t.d+'</p><div class="box"><b>最適合你的朋友：'+m.e+' '+m.n.split("・")[0]+'</b><span>和你最合拍的是'+m.e+m.n.split("・")[0]+'，你們剛好互補。</span></div><button class="btn" id="sh">分享給朋友</button><button class="btn ghost" id="rt">'+(mine?"再夾一次":"我也要夾！")+'</button><div class="meta" id="ts"></div></div>';
+$("rt").onclick=play;$("sh").onclick=function(){share(t)};window.scrollTo(0,0)}
+function share(t){var url=location.href,txt="我夾到「"+t.n+"」！來夾夾看你是哪一種動物系朋友：",ts=$("ts");
+function ok(){ts.textContent="已複製連結，快貼給朋友吧！"}function fb(){ts.textContent="請長按網址列複製連結分享"}
+try{if(navigator.share){navigator.share({title:"動物系朋友夾娃娃機",text:txt,url:url}).catch(function(){});return}}catch(e){}
+try{navigator.clipboard.writeText(txt+url).then(ok,fb)}catch(e){fb()}}
+function route(){var h=location.hash.slice(8);if(location.hash.indexOf("#result-")===0&&TYPES[h]&&!document.querySelector(".machine"))show(h,false)}
+window.addEventListener("hashchange",route);
+loadP();var h0=location.hash.slice(8);if(location.hash.indexOf("#result-")===0&&TYPES[h0])show(h0,false);else play();
+</script>
+</body>
+</html>

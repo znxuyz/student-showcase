@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>幸運抽籤：抽出 2 位同學</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap">
+<style>
+:root{--bg:#fff8ec;--card:#ffffff;--text:#2b2118;--muted:#7a6a5a;--accent:#ff6b35;--accent2:#ffb703;--line:#f0e2cc;--win:#fff0d6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1511;--card:#271e17;--text:#f6ecdf;--muted:#b9a894;--accent:#ff8a4c;--accent2:#ffc933;--line:#3b2e23;--win:#3a2b1a}}
+:root[data-theme="dark"]{--bg:#1b1511;--card:#271e17;--text:#f6ecdf;--muted:#b9a894;--accent:#ff8a4c;--accent2:#ffc933;--line:#3b2e23;--win:#3a2b1a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:20px 14px}
+main{width:100%;max-width:560px}
+h1{text-align:center;font-size:1.7rem;margin:6px 0 4px}
+.sub{text-align:center;color:var(--muted);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:16px}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.pickn{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;font-size:1.05rem}
+.pickn b{font-size:1.8rem;min-width:2ch;text-align:center;color:var(--accent)}
+.step{width:42px;height:42px;font-size:1.5rem;line-height:1;background:var(--win);color:var(--accent);border:2px solid var(--accent2)}
+.slot{background:var(--win);border:2px dashed var(--accent2);border-radius:16px;height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px;overflow:hidden}
+.slot small{color:var(--muted);font-size:.8rem}
+.slot b{font-size:1.9rem;word-break:break-all;line-height:1.2}
+.slot.done{border-style:solid;border-color:var(--accent);animation:pop .5s}
+@keyframes pop{0%{transform:scale(.85)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px}
+#go{width:100%;margin-top:14px;padding:14px;font-size:1.2rem;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent),#e63946);box-shadow:0 4px 0 rgba(0,0,0,.18)}
+#go:disabled{opacity:.6;cursor:wait}
+textarea{width:100%;height:150px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;background:var(--bg);color:var(--text)}
+label{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.row span{color:var(--muted);font-size:.9rem}
+.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);padding:6px 12px}
+.size{display:flex;align-items:center;gap:10px;margin:10px 0 12px;flex-wrap:wrap}
+.size input[type=range]{flex:1;min-width:120px;accent-color:var(--accent)}
+.size input[type=number]{width:72px;padding:8px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--bg);color:var(--text);text-align:center}
+#hist{margin:8px 0 0;padding-left:20px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chip{padding:6px 10px;border-radius:999px;border:1px solid var(--accent);background:var(--win);color:var(--text);font-size:.9rem}
+.chip.off{background:transparent;color:var(--muted);border-color:var(--line);text-decoration:line-through;opacity:.7}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.tools label{margin-top:0}
+.tools select{padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+.slot em{font-style:normal;font-size:.8rem;color:var(--muted);margin-top:4px}
+.cd{position:fixed;inset:0;display:none;align-items:center;justify-content:center;font-size:12rem;font-weight:800;color:#fff;background:rgba(0,0,0,.55);z-index:20}
+.g{padding:6px 0;border-bottom:1px dashed var(--line)}
+.card input[type=number]{width:64px;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit;text-align:center}
+body.big main{max-width:none}body.big main>.card:not(:first-of-type){display:none}
+.big h1{font-size:2.6rem}.big .slot{height:240px}.big .slot b{font-size:3.4rem}.big .slot small{font-size:1.1rem}.big .slot em{font-size:1.3rem}
+body{background:radial-gradient(circle at 8% 0%,color-mix(in srgb,var(--accent2) 38%,transparent),transparent 42%),radial-gradient(circle at 100% 18%,color-mix(in srgb,var(--accent) 28%,transparent),transparent 40%),var(--bg);background-attachment:fixed}
+h1{font-size:2.2rem;font-weight:900;letter-spacing:.06em;margin:10px 0 2px}
+.gt{background:linear-gradient(90deg,var(--accent),#e63946 55%,var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.dice{display:inline-block;margin-right:8px;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-6px) rotate(10deg)}}
+.sub{font-size:1.05rem;letter-spacing:.08em}
+.card{border:0;border-radius:24px;padding:18px;box-shadow:0 10px 28px color-mix(in srgb,var(--text) 10%,transparent)}
+main>.card:first-of-type{border-top:6px solid var(--accent)}
+.card>.row>strong,.card>strong{font-size:1.05rem}
+.slot{border:2px solid var(--line);background:linear-gradient(160deg,var(--win),var(--card));box-shadow:0 5px 0 var(--line);transition:.2s}
+.slot small{letter-spacing:.1em}.slot b{font-weight:900;color:var(--text)}
+.slot.done{border-color:var(--accent);background:linear-gradient(160deg,var(--win),color-mix(in srgb,var(--accent2) 32%,var(--card)));box-shadow:0 6px 0 var(--accent),0 14px 26px color-mix(in srgb,var(--accent) 30%,transparent)}
+.slot.done b{color:var(--accent)}
+#go{border-radius:999px;padding:16px;font-size:1.3rem;letter-spacing:.1em;transition:transform .15s,box-shadow .15s}
+#go:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 0 rgba(0,0,0,.18),0 12px 22px color-mix(in srgb,var(--accent) 35%,transparent)}
+#go:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.step{border-radius:50%;transition:transform .15s}.step:hover{transform:scale(1.1)}.step:active{transform:scale(.92)}
+.ghost{border-radius:999px;transition:.15s}.ghost:hover{background:var(--accent);color:#fff}
+.tools select{border-radius:999px;padding:8px 14px}
+.chip{transition:.15s}.chip:hover{transform:translateY(-1px);border-color:var(--accent2)}
+textarea,.card input[type=number],.size input[type=number]{outline:0;transition:.15s}
+textarea:focus,.card input[type=number]:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+#hist li{padding:4px 0}#hist li::marker{color:var(--accent);font-weight:700}
+.g{border-radius:10px;background:var(--win);border:0;padding:8px 12px;margin-top:8px}
+.theme{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;color:var(--muted)}
+#sw{display:flex;gap:6px}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;transition:transform .15s}.sw:hover{transform:scale(1.2)}
+#hue{-webkit-appearance:none;appearance:none;flex:1;min-width:110px;height:10px;border-radius:999px;background:linear-gradient(90deg,hsl(0,85%,55%),hsl(60,85%,50%),hsl(120,70%,45%),hsl(180,70%,45%),hsl(240,80%,60%),hsl(300,75%,55%),hsl(360,85%,55%))}
+#hue::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--accent);cursor:pointer}
+#hue::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent);cursor:pointer}
+.gt{background:linear-gradient(90deg,var(--accent),var(--a3,#e63946) 55%,var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+#go{background:linear-gradient(135deg,var(--accent),var(--a3,#e63946))}
+.conf{position:fixed;top:-20px;font-size:1.6rem;pointer-events:none;animation:fall 2.2s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:.8}}
+</style>
+</head>
+<body>
+<main>
+<h1><span class="dice">🎲</span><span class="gt">幸運抽籤</span></h1>
+<p class="sub" id="sub"></p>
+
+<div class="card">
+<div class="pickn"><span>抽出人數</span><button type="button" class="step" id="minus" aria-label="減少">−</button><b id="winN">2</b><button type="button" class="step" id="plus" aria-label="增加">＋</button><span>位</span></div>
+<div class="slots" id="slots"></div>
+<div class="tools"><select id="mode" aria-label="抽法"><option value="slot">🎰 拉霸</option><option value="card">🎴 翻牌</option><option value="gacha">🥚 扭蛋</option></select><label><input type="checkbox" id="snd" checked> 音效</label><button class="ghost" id="full">⛶ 投影模式</button></div>
+<div class="theme"><span>🎨 主題色</span><input type="range" id="hue" min="0" max="360" value="18" aria-label="主題色"><span id="sw"></span><button class="ghost" id="hreset">還原</button></div>
+<button id="go">開始抽籤！</button>
+</div>
+
+<div class="card">
+<div class="row"><strong>班級人數</strong><button class="ghost" id="reset">重設名單</button></div>
+<div class="size"><input type="range" id="sizeR" min="2" max="60" value="30" aria-label="班級人數"><input type="number" id="size" min="2" max="100" value="30"><span>人</span></div>
+<strong>同學名單</strong>（可直接改成姓名）
+<textarea id="names" aria-label="同學名單，每行一位"></textarea>
+<div class="row" style="margin-top:12px"><strong>排除號碼</strong><button class="ghost" id="clearEx">全部恢復</button></div>
+<div class="row"><span>點一下號碼（或名字）即可排除，再點一次恢復</span></div>
+<div class="chips" id="chips"></div>
+<div class="row"><span id="count"></span></div>
+<label><input type="checkbox" id="norepeat" checked> 抽過的同學不再重複抽中</label>
+<div class="row" style="margin-top:12px"><strong>抽籤紀錄</strong><button class="ghost" id="copy">複製紀錄</button></div><ol id="hist"></ol>
+</div>
+<div class="card"><strong>🎁 任務／題目</strong>（選填，每位中獎者隨機分配一個）<textarea id="tasks" style="height:80px" placeholder="每行一個，例如：回答一個英文單字"></textarea></div>
+<div class="card"><strong>👥 隨機分組</strong><div class="size">分成<input type="number" id="gn" value="4" min="2" max="20">組<button class="ghost" id="grp">開始分組</button></div><div id="gout"></div></div>
+</main>
+<div class="cd" id="cd"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+function makeList(n){return Array.from({length:n},(_,i)=>(i+1)+"號").join("\n")}
+function curSize(){const n=parseInt($("size").value,10);return Math.min(100,Math.max(2,isNaN(n)?30:n))}
+$("names").value=makeList(30);
+function applySize(n){n=Math.min(100,Math.max(2,n));$("size").value=n;$("sizeR").value=Math.min(n,60);
+  drawn.clear();excluded.clear();$("hist").innerHTML="";$("names").value=makeList(n);refresh()}
+$("sizeR").addEventListener("input",e=>applySize(parseInt(e.target.value,10)));
+$("size").addEventListener("change",()=>applySize(curSize()));
+let drawn=new Set(), excluded=new Set(), busy=false;
+function active(){return list().filter(n=>!excluded.has(n))}
+function renderChips(){
+  const names=list();
+  excluded.forEach(n=>{if(!names.includes(n))excluded.delete(n)});
+  const box=$("chips");box.innerHTML="";
+  names.forEach(n=>{const b=document.createElement("button");b.type="button";
+    b.className="chip"+(excluded.has(n)?" off":"");b.textContent=n;
+    b.onclick=()=>{excluded.has(n)?excluded.delete(n):excluded.add(n);refresh()};box.appendChild(b)})
+}
+$("clearEx").onclick=()=>{excluded.clear();refresh()};
+
+function list(){return $("names").value.split("\n").map(s=>s.trim()).filter(Boolean)}
+function refresh(){save();renderChips();$("count").textContent="共 "+list().length+" 位（排除 "+excluded.size+" 位，可抽 "+active().length+" 位），已抽過 "+drawn.size+" 位"}
+$("names").addEventListener("input",refresh);
+$("reset").onclick=()=>{drawn.clear();excluded.clear();$("hist").innerHTML="";$("names").value=makeList(curSize());
+  buildSlots();refresh()};
+
+function setSlot(id,name,done,ex){const el=$(id);el.className="slot"+(done?" done":"");
+  el.innerHTML="<small>"+(done?"🎉 就是你！":"抽選中…")+"</small><b></b>"+(ex?"<em></em>":"");el.querySelector("b").textContent=name;if(ex)el.querySelector("em").textContent=ex}
+
+function confetti(){const e=["🎉","✨","🎊","⭐","🎈"];
+  for(let i=0;i<30;i++){const c=document.createElement("div");c.className="conf";c.textContent=e[i%e.length];
+    c.style.left=Math.random()*100+"vw";c.style.animationDelay=Math.random()*.8+"s";document.body.appendChild(c);
+    setTimeout(()=>c.remove(),3200)}}
+
+const mode=()=>$("mode").value;
+const face=()=>({card:"🎴",gacha:"🥚"}[mode()]||"…");
+let ac,tc=0;
+function beep(f,d){if(!$("snd").checked)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.08;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+function tick(){if(tc++%3==0)beep(500,.03)}
+function countdown(){return new Promise(r=>{let n=3;const c=$("cd");c.style.display="flex";const s=()=>{if(n==0){c.style.display="none";return r()}c.textContent=n;beep(600,.15);n--;setTimeout(s,700)};s()})}
+function pickTask(){const t=$("tasks").value.split("\n").map(s=>s.trim()).filter(Boolean);return t.length?t[Math.floor(Math.random()*t.length)]:""}
+function save(){try{localStorage.setItem("pick_names",$("names").value);localStorage.setItem("pick_tasks",$("tasks").value)}catch(e){}}
+try{const s=localStorage.getItem("pick_names"),t=localStorage.getItem("pick_tasks");if(s){$("names").value=s;const L=list().length;$("size").value=L;$("sizeR").value=Math.min(L,60)}if(t)$("tasks").value=t}catch(e){}
+$("tasks").addEventListener("input",save);
+$("full").onclick=()=>{const on=document.body.classList.toggle("big");try{(on?document.documentElement.requestFullscreen():document.fullscreenElement&&document.exitFullscreen()).catch(()=>{})}catch(e){}};
+$("grp").onclick=()=>{const a=active(),n=Math.max(2,Math.min(20,parseInt($("gn").value)||2));
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  const g=Array.from({length:n},()=>[]);a.forEach((x,i)=>g[i%n].push(x));
+  $("gout").innerHTML="";g.forEach((m,i)=>{const d=document.createElement("div");d.className="g";d.textContent="第"+(i+1)+"組："+m.join("、");$("gout").appendChild(d)});beep(700,.2)};
+function fb(t){const x=document.createElement("textarea");x.value=t;document.body.appendChild(x);x.select();try{document.execCommand("copy")}catch(e){}x.remove()}
+$("copy").onclick=()=>{const t=[...$("hist").children].reverse().map((l,i)=>(i+1)+". "+l.textContent).join("\n");if(!t)return;
+  const ok=()=>{$("copy").textContent="已複製 ✓";setTimeout(()=>$("copy").textContent="複製紀錄",1500)};
+  if(navigator.clipboard)navigator.clipboard.writeText(t).then(ok,()=>{fb(t);ok()});else{fb(t);ok()}};
+let hueOn=false;
+function applyHue(h){const r=document.documentElement.style,d=matchMedia("(prefers-color-scheme: dark)").matches;
+  const c=(s,l)=>"hsl("+h+","+s+"%,"+l+"%)";
+  const v=d?{"--bg":c(25,10),"--card":c(22,14),"--line":c(20,24),"--win":c(30,19),"--text":c(30,93),"--muted":c(12,70),"--accent":c(90,62)}:{"--bg":c(100,96),"--card":"#fff","--line":c(60,87),"--win":c(100,92),"--text":c(35,14),"--muted":c(15,38),"--accent":c(90,55)};
+  v["--accent2"]="hsl("+(h+28)+",95%,"+(d?60:52)+"%)";v["--a3"]="hsl("+(h-14)+",80%,"+(d?58:48)+"%)";
+  for(const k in v)r.setProperty(k,v[k]);$("hue").value=h;hueOn=true;
+  try{localStorage.setItem("pick_hue",h)}catch(e){}}
+function resetHue(){const r=document.documentElement.style;
+  ["--bg","--card","--line","--win","--text","--muted","--accent","--accent2","--a3"].forEach(k=>r.removeProperty(k));
+  $("hue").value=18;hueOn=false;try{localStorage.removeItem("pick_hue")}catch(e){}}
+[[18,"橘"],[210,"藍"],[150,"綠"],[330,"粉"],[270,"紫"],[0,"紅"]].forEach(([h,n])=>{const b=document.createElement("button");b.type="button";b.className="sw";b.title=n;b.setAttribute("aria-label",n);b.style.background="hsl("+h+",90%,55%)";b.onclick=()=>applyHue(h);$("sw").appendChild(b)});
+$("hue").oninput=e=>applyHue(+e.target.value);
+$("hreset").onclick=resetHue;
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(hueOn)applyHue(+$("hue").value)});
+try{const h=localStorage.getItem("pick_hue");if(h!==null)applyHue(+h)}catch(e){}
+let winN=2;
+function buildSlots(){const box=$("slots");box.innerHTML="";
+  for(let i=1;i<=winN;i++){const d=document.createElement("div");d.className="slot";d.id="s"+i;
+    d.innerHTML="<small>幸運同學 "+i+"</small><b>？</b>";box.appendChild(d)}
+  $("sub").textContent="一次隨機抽出 "+winN+" 位同學";$("winN").textContent=winN}
+function setWin(n){if(busy)return;winN=Math.min(10,Math.max(1,n));buildSlots()}
+$("minus").onclick=()=>setWin(winN-1);
+$("plus").onclick=()=>setWin(winN+1);
+$("go").onclick=async()=>{
+  if(busy)return;
+  const all=active();
+  if(all.length<winN){alert("可抽的同學不足 "+winN+" 位，請減少抽出人數或恢復被排除的號碼！");return}
+  let pool=$("norepeat").checked?all.filter(n=>!drawn.has(n)):all;
+  if(pool.length<winN){drawn.clear();pool=all;refresh()}
+  const arr=[...pool];
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+  const picks=arr.slice(0,winN);
+  const tk=picks.map(()=>pickTask());
+  busy=true;$("go").disabled=true;$("go").textContent="抽選中…";await countdown();
+  const stopped=new Set();
+  for(let i=1;i<=winN;i++)setSlot("s"+i,face(),false);
+  const flash=setInterval(()=>{tick();for(let i=1;i<=winN;i++)if(!stopped.has(i))setSlot("s"+i,mode()=="slot"?all[Math.floor(Math.random()*all.length)]:face(),false)},70);
+  const step=winN>5?450:850;
+  picks.forEach((p,i)=>setTimeout(()=>{
+    stopped.add(i+1);setSlot("s"+(i+1),p,true,tk[i]);beep(880,.25);
+    if(i===winN-1){
+      clearInterval(flash);confetti();picks.forEach(x=>drawn.add(x));
+      const li=document.createElement("li");li.textContent=picks.map((p,k)=>p+(tk[k]?"（"+tk[k]+"）":"")).join("、");$("hist").prepend(li);
+      busy=false;$("go").disabled=false;$("go").textContent="再抽一次！";refresh();
+    }
+  },1200+i*step));
+};
+buildSlots();
+refresh();
+</script>
+</body>
+</html>

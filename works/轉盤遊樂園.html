@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>轉盤遊樂園</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&display=swap">
+<style>
+:root{--paper:#FFF6DD;--panel:#FFFFFF;--ink:#1B2A2F;--muted:#5C6B6F;--accent:#E8574A;--good:#1F8A63;--bad:#C23B30;--line:#E3D6AE;--pin:#E8574A;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#10262B;--panel:#1A363D;--ink:#FFF3D6;--muted:#A9BDBF;--accent:#F2766A;--good:#5BD6A5;--bad:#FF8F85;--line:#2D4F57;--pin:#F2766A}}
+:root[data-theme="dark"]{--paper:#10262B;--panel:#1A363D;--ink:#FFF3D6;--muted:#A9BDBF;--accent:#F2766A;--good:#5BD6A5;--bad:#FF8F85;--line:#2D4F57;--pin:#F2766A}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-weight:500;line-height:1.6}
+main{max-width:520px;margin:0 auto;padding:16px 16px 40px}
+h1{font-weight:900;font-size:clamp(1.6rem,6vw,2.1rem);margin:8px 0 4px;letter-spacing:.02em}
+.sub{color:var(--muted);margin:0 0 14px}
+.bar{display:flex;gap:8px;margin-bottom:12px}
+.stat{flex:1;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:6px 10px;text-align:center}
+.stat b{display:block;font-size:1.35rem;font-weight:900}
+.stat span{font-size:.8rem;color:var(--muted)}
+.stage{position:relative;width:100%;max-width:440px;margin:0 auto}
+canvas{width:100%;height:auto;display:block}
+.pin{position:absolute;left:50%;top:-6px;width:0;height:0;transform:translateX(-50%);border-left:16px solid transparent;border-right:16px solid transparent;border-top:34px solid var(--pin);filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+button{font:inherit;font-weight:900;cursor:pointer;border:0;border-radius:14px}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.spin{display:block;margin:14px auto 0;width:min(100%,300px);padding:14px;font-size:1.25rem;background:var(--accent);color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.25)}
+.spin:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.spin:disabled{opacity:.55;cursor:default}
+.msg{text-align:center;min-height:1.6em;margin:10px 0 0;color:var(--muted)}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:16px;margin-top:14px}
+.card[hidden]{display:none}
+.tag{display:inline-block;padding:2px 12px;border-radius:99px;font-weight:900;font-size:.9rem;color:#1B2A2F}
+.q{font-size:1.2rem;font-weight:900;margin:10px 0 12px}
+.opts{display:grid;gap:8px}
+.opt{width:100%;text-align:left;padding:12px 14px;background:var(--paper);color:var(--ink);border:2px solid var(--line);font-weight:500;font-size:1.05rem}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 22%,var(--paper))}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 20%,var(--paper))}
+.fb{margin:12px 0 0;font-weight:900}
+.next{margin-top:10px;padding:10px 18px;background:var(--ink);color:var(--paper)}
+.end h2{margin:0 0 6px;font-weight:900}
+details{margin-top:22px;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px}
+summary{cursor:pointer;font-weight:900}
+textarea{width:100%;height:170px;margin-top:10px;padding:8px;font:inherit;font-size:.9rem;background:var(--paper);color:var(--ink);border:2px solid var(--line);border-radius:10px}
+.help{font-size:.85rem;color:var(--muted);margin:8px 0 0}
+.apply{margin-top:8px;padding:8px 16px;background:var(--good);color:#10262B}
+.awning{height:20px;margin:0 -16px;border-radius:0 0 16px 16px;background:repeating-linear-gradient(90deg,#E8574A 0 30px,#FFF6DD 30px 60px);box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.spin.prize{background:#6C4BD6;font-size:1.05rem;margin-top:12px}
+#shelf{margin-top:6px;font-size:1.1rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<div class="awning"></div>
+<h1>🎡 轉盤遊樂園</h1>
+<p class="sub">歡迎來到遊樂園！轉「知識轉盤」答題賺票券，集滿 3 張票就能去玩「獎品轉盤」，把大獎帶回家。</p>
+<div class="bar">
+<div class="stat"><b id="score">0</b><span>分數</span></div>
+<div class="stat"><b id="round">0/10</b><span>回合</span></div>
+<div class="stat"><b id="streak">0</b><span>連對</span></div>
+<div class="stat"><b id="tickets">0</b><span>🎟 票券</span></div>
+</div>
+<div class="stage"><canvas id="wheel" width="880" height="880" aria-label="幸運轉盤"></canvas><div class="pin"></div></div>
+<button class="spin" id="spinBtn">轉！</button>
+<p class="msg" id="msg">按下「轉」開始遊戲</p>
+<button class="spin prize" id="prizeBtn" disabled>🎟 3 張票玩獎品轉盤</button>
+<section class="card"><b>🎁 我的獎品櫃</b><div id="shelf"></div></section>
+
+<section class="card" id="qcard" hidden>
+<span class="tag" id="qtag"></span>
+<p class="q" id="qtext"></p>
+<div class="opts" id="opts"></div>
+<p class="fb" id="fb" role="status"></p>
+<button class="next" id="nextBtn" hidden>再轉一次</button>
+</section>
+
+<section class="card end" id="end" hidden>
+<h2 id="endTitle"></h2>
+<p id="endText"></p>
+<button class="next" id="again">重新開始</button>
+</section>
+
+<details>
+<summary>自訂題庫（老師、家長可用）</summary>
+<p class="help">每行一題，格式：科目|題目|正確答案|錯誤答案1|錯誤答案2|錯誤答案3（錯誤答案至少 1 個，最多 3 個；科目最多 8 種）。</p>
+<textarea id="custom" spellcheck="false"></textarea>
+<button class="apply" id="apply">套用題庫並重新開始</button>
+<p class="help" id="customMsg" role="status"></p>
+</details>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const COLORS=["#F2B632","#F28B7D","#7FD1B0","#8EC5F0","#F5D98B","#C7A8F0","#F7A8C8","#A9D96C"];
+const DEFAULT=`國語|「畫蛇添足」比喻什麼？|多此一舉|做事細心|畫畫技巧高|速度很快
+國語|「春眠不覺曉」的下一句是？|處處聞啼鳥|夜來風雨聲|花落知多少|床前明月光
+國語|哪一個詞語是「安靜」的反義詞？|吵鬧|寧靜|平靜|沉默
+數學|3/4 + 1/4 = ?|1|4/8|3/16|2
+數學|正方形邊長 6 公分，周長是多少？|24 公分|12 公分|36 公分|18 公分
+數學|7 × 8 = ?|56|54|48|64
+自然|植物行光合作用需要什麼？|陽光、水和二氧化碳|只要土壤|只要氧氣|月光和沙子
+自然|在一大氣壓下，水幾度沸騰？|100°C|50°C|0°C|200°C
+自然|太陽系中最大的行星是？|木星|地球|火星|金星
+社會|台灣最高的山是？|玉山|阿里山|雪山|合歡山
+社會|地球上面積最大的海洋是？|太平洋|大西洋|印度洋|北冰洋
+社會|紅綠燈的綠燈代表什麼？|可以通行|一定要停|準備倒車|可以闖紅燈
+英文|Apple 的中文是？|蘋果|香蕉|橘子|葡萄
+英文|I ___ a student.|am|is|are|be
+英文|下列哪一個是顏色？|Blue|Table|Run|Happy
+生活|洗手時，建議至少搓洗多久？|20 秒|3 秒|1 秒|5 秒
+生活|過馬路時應該先做什麼？|停、看、聽|直接衝過去|看手機|閉眼走
+生活|哪一種食物含有較多鈣質？|牛奶|汽水|糖果|洋芋片
+國語|「守株待兔」告訴我們什麼道理？|不要只靠運氣、不努力|兔子跑得很快|樹木很重要|要多種樹
+國語|哪一個詞語形容「很高興」？|眉開眼笑|愁眉苦臉|垂頭喪氣|怒氣沖沖
+國語|「床前明月光」的作者是誰？|李白|杜甫|白居易|王維
+數學|一小時有幾分鐘？|60|30|100|24
+數學|100 − 37 = ?|63|73|67|53
+數學|三角形有幾個角？|3|4|2|5
+自然|下列哪一種動物是哺乳類？|鯨魚|鯊魚|青蛙|蛇
+自然|月亮本身會發光嗎？|不會，是反射太陽光|會，自己發光|只有滿月會發光|只有晚上會發光
+自然|磁鐵會吸引下列哪一樣東西？|鐵釘|橡皮擦|紙張|木頭
+社會|日月潭位於臺灣哪個縣市？|南投縣|花蓮縣|臺東縣|宜蘭縣
+社會|七大洲中面積最大的是？|亞洲|非洲|歐洲|大洋洲
+社會|在圖書館裡應該怎麼做？|輕聲細語|大聲聊天|奔跑玩耍|在書上塗鴉
+英文|Dog 的中文是？|狗|貓|魚|鳥
+英文|「謝謝」的英文是？|Thank you|Sorry|Hello|Goodbye
+英文|What color is the sky on a sunny day?|Blue|Black|Pink|Brown
+生活|每天最好喝什麼來補充水分？|白開水|含糖飲料|汽水|奶茶
+生活|看到有人跌倒受傷，應該先做什麼？|請大人幫忙|嘲笑他|假裝沒看到|拍照上傳
+生活|刷牙時間建議至少多久？|2 分鐘|10 秒|20 秒|只要漱口`;
+
+const TOTAL=10;
+let cats=[],bank={},used={},rot=0,spinning=false,cur=null,score=0,round=0,streak=0,answered=false;
+const PRIZES=["🎈氣球","🍭糖果","🧸玩偶","⭐金星","🎠木馬","🍦冰淇淋"];
+let mode="quiz",tickets=0,shelf={};
+const segs=()=>mode==="prize"?PRIZES:cats;
+const $=id=>document.getElementById(id);
+const cv=$("wheel"),ctx=cv.getContext("2d");
+
+function parse(text){
+  const b={};let n=0;
+  text.split("\n").forEach(l=>{
+    const p=l.split("|").map(s=>s.trim());
+    if(p.length>=4&&p[0]&&p[1]&&p[2]&&p[3]){
+      (b[p[0]]=b[p[0]]||[]).push({q:p[1],a:p[2],w:p.slice(3,6).filter(Boolean)});n++;
+    }
+  });
+  return {b,n};
+}
+function load(text){
+  const {b,n}=parse(text);
+  const names=Object.keys(b);
+  if(!n||names.length<2||names.length>8) return false;
+  bank=b;cats=names;used={};names.forEach(c=>used[c]=[]);return true;
+}
+function draw(){
+  const cats=segs(),W=cv.width,R=W/2-14,seg=2*Math.PI/cats.length;
+  ctx.clearRect(0,0,W,W);
+  ctx.save();ctx.translate(W/2,W/2);
+  ctx.beginPath();ctx.arc(0,0,R+10,0,7);ctx.fillStyle="#1B2A2F";ctx.fill();
+  for(let i=0;i<28;i++){const a=i/28*2*Math.PI;ctx.beginPath();ctx.arc(Math.cos(a)*(R+4),Math.sin(a)*(R+4),6,0,7);ctx.fillStyle=(i+Math.floor(performance.now()/(spinning?120:600)))%2?"#FFD84D":"#FFF6DD";ctx.fill();}
+  cats.forEach((c,i)=>{
+    const a0=rot+i*seg,a1=a0+seg;
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,a0,a1);ctx.closePath();
+    ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
+    ctx.lineWidth=5;ctx.strokeStyle="#1B2A2F";ctx.stroke();
+    ctx.save();ctx.rotate(a0+seg/2);ctx.textAlign="right";ctx.textBaseline="middle";
+    ctx.fillStyle="#1B2A2F";ctx.font="900 "+(cats.length>6?52:62)+"px 'Noto Sans TC',sans-serif";
+    ctx.fillText(c,R-36,0);ctx.restore();
+  });
+  ctx.beginPath();ctx.arc(0,0,48,0,7);ctx.fillStyle="#1B2A2F";ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,22,0,7);ctx.fillStyle="#FFF6DD";ctx.fill();
+  ctx.restore();if(wheelTex)wheelTex.needsUpdate=true;
+}
+function updateStats(){
+  $("score").textContent=score;$("round").textContent=round+"/"+TOTAL;$("streak").textContent=streak;$("tickets").textContent=tickets;
+  $("prizeBtn").disabled=!(tickets>=3&&!spinning&&!(cur&&!answered)&&$("end").hidden);
+}
+function spin(){
+  if(spinning||answered===false&&cur) return;
+  spinning=true;$("spinBtn").disabled=true;$("qcard").hidden=true;$("msg").textContent="轉轉轉…";updateStats();
+  const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const dur=reduce?600:4200,start=rot,extra=(5+Math.random()*3)*2*Math.PI+Math.random()*2*Math.PI;
+  const t0=performance.now();
+  (function f(now){
+    const t=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-t,3.2);
+    rot=start+extra*e;draw();
+    if(t<1) requestAnimationFrame(f); else done();
+  })(t0);
+}
+function done(){
+  spinning=false;const cats=segs();
+  const seg=2*Math.PI/cats.length;
+  const ang=(((1.5*Math.PI-rot)%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  const idx=Math.min(cats.length-1,Math.floor(ang/seg));
+  if(mode==="prize"){award(cats[idx]);return;}ask(cats[idx],idx);
+}
+function ask(cat,idx){
+  const orig=cat;
+  const free=c=>bank[c].map((_,i)=>i).filter(i=>!used[c].includes(i));
+  let pool=free(cat);
+  if(!pool.length){
+    const o=cats.filter(c=>free(c).length);
+    if(o.length){cat=o[Math.floor(Math.random()*o.length)];idx=cats.indexOf(cat);}
+    else{cats.forEach(c=>used[c]=[]);}
+    pool=free(cat);
+  }
+  const qi=pool[Math.floor(Math.random()*pool.length)];used[cat].push(qi);
+  const item=bank[cat][qi];cur=item;answered=false;
+  $("msg").textContent=orig===cat?"指針停在「"+cat+"」！":"「"+orig+"」的題目出完了，改考「"+cat+"」！";
+  const tag=$("qtag");tag.textContent=cat;tag.style.background=COLORS[idx%COLORS.length];
+  $("qtext").textContent=item.q;$("fb").textContent="";$("nextBtn").hidden=true;
+  const opts=[item.a,...item.w].sort(()=>Math.random()-.5);
+  const box=$("opts");box.innerHTML="";
+  opts.forEach(o=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=o;
+    b.onclick=()=>pick(b,o);box.appendChild(b);
+  });
+  $("qcard").hidden=false;updateStats();
+  $("qcard").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function pick(btn,o){
+  if(answered) return;answered=true;round++;
+  [...$("opts").children].forEach(b=>{b.disabled=true;if(b.textContent===cur.a)b.classList.add("right");});
+  if(o===cur.a){
+    streak++;tickets++;const gain=10+(streak>1?5*(streak-1):0);score+=gain;
+    $("fb").style.color="var(--good)";$("fb").textContent="答對了！+"+gain+" 分、+1 張票券"+(streak>1?"（連對 "+streak+" 題）":"");
+  }else{
+    btn.classList.add("wrong");streak=0;
+    $("fb").style.color="var(--bad)";$("fb").textContent="可惜，正確答案是「"+cur.a+"」。";
+  }
+  updateStats();cur=null;
+  if(round>=TOTAL){setTimeout(finish,900);}
+  else{$("nextBtn").hidden=false;$("nextBtn").focus();$("spinBtn").disabled=false;}
+}
+function finish(){
+  $("qcard").hidden=true;$("end").hidden=false;$("spinBtn").disabled=true;updateStats();
+  const max=TOTAL*10,r=score/max;
+  $("endTitle").textContent="挑戰完成！總分 "+score+" 分";
+  $("endText").textContent=r>=1?"太厲害了，你是知識大王！":r>=.6?"表現很棒，再挑戰一次試試看！":"已經學到不少了，再玩一次會更好！";
+}
+function reset(){
+  score=0;round=0;streak=0;tickets=0;mode="quiz";cur=null;answered=false;spinning=false;
+  $("end").hidden=true;$("qcard").hidden=true;$("spinBtn").disabled=false;
+  $("msg").textContent="按下「轉」開始遊戲";updateStats();
+  draw();
+}
+function renderShelf(){const k=Object.keys(shelf);$("shelf").textContent=k.length?k.map(p=>p+" ×"+shelf[p]).join("　"):"還沒有獎品，答對題目累積票券吧！";}
+function award(p){
+  shelf[p]=(shelf[p]||0)+1;renderShelf();mode="quiz";
+  $("msg").textContent="🎉 恭喜抽中「"+p+"」！";
+  $("spinBtn").disabled=round>=TOTAL;updateStats();draw();
+}
+$("prizeBtn").onclick=()=>{
+  if(spinning||tickets<3) return;
+  tickets-=3;mode="prize";draw();spin();
+};
+$("spinBtn").onclick=spin;
+$("nextBtn").onclick=()=>{$("qcard").hidden=true;spin();};
+$("again").onclick=reset;
+$("apply").onclick=()=>{
+  if(load($("custom").value)){reset();$("customMsg").textContent="已套用！共 "+Object.values(bank).reduce((s,a)=>s+a.length,0)+" 題、"+cats.length+" 個科目。";}
+  else $("customMsg").textContent="格式不正確：需要 2 到 8 個科目，且每行至少包含 4 個以 | 分隔的欄位。";
+};
+var wheelTex=null;
+function init3D(){
+ try{
+  const stage=document.querySelector(".stage");
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const el=renderer.domElement;
+  el.style.cssText="width:100%;height:auto;display:block;border-radius:20px;background:linear-gradient(#7EC8F2,#D9F0FF 62%,#FFF6DD)";
+  stage.appendChild(el);
+  const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(38,1/.92,.1,100);
+  scene.add(new THREE.AmbientLight(0xffffff,.75));
+  const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(4,8,6);scene.add(sun);
+  const M=c=>new THREE.MeshLambertMaterial({color:c});
+  const gr=new THREE.Mesh(new THREE.PlaneGeometry(60,60),M(0x6CC59A));gr.rotation.x=-Math.PI/2;scene.add(gr);
+  wheelTex=new THREE.CanvasTexture(cv);
+  const wg=new THREE.Group();wg.position.set(0,2.7,0);scene.add(wg);
+  const R3=2.2;
+  const face=new THREE.Mesh(new THREE.CircleGeometry(R3,64),new THREE.MeshBasicMaterial({map:wheelTex}));face.position.z=.16;wg.add(face);
+  const rim=new THREE.Mesh(new THREE.CylinderGeometry(R3*1.02,R3*1.02,.3,64),M(0x1B2A2F));rim.rotation.x=Math.PI/2;wg.add(rim);
+  const ptr=new THREE.Mesh(new THREE.ConeGeometry(.3,.7,16),M(0xE8574A));ptr.position.set(0,R3+.15,.35);wg.add(ptr);
+  [-1,1].forEach(s=>{const l=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,2.88,10),M(0xC23B30));l.position.set(s*.8,1.35,-.3);l.rotation.z=s*.35;scene.add(l);});
+  const fw=new THREE.Group();fw.position.set(-3.8,3.6,-7);fw.scale.setScalar(.85);scene.add(fw);
+  fw.add(new THREE.Mesh(new THREE.TorusGeometry(3,.09,8,48),M(0xFFFFFF)));
+  for(let i=0;i<5;i++){const sp=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,6,6),M(0xDDDDDD));sp.rotation.z=i/5*Math.PI;fw.add(sp);}
+  const cars=[];
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,c=new THREE.Mesh(new THREE.BoxGeometry(.7,.55,.5),M(new THREE.Color(COLORS[i%COLORS.length])));c.position.set(Math.cos(a)*3,Math.sin(a)*3,0);fw.add(c);cars.push(c);}
+  [-1,1].forEach(s=>{const l=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,4,8),M(0xC23B30));l.position.set(-3.8+s*.9,1.7,-7);l.rotation.z=s*.25;scene.add(l);});
+  const tb=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.4,1.2,8),M(0xFFF6DD));tb.position.set(4.4,.6,-5);scene.add(tb);
+  const tc=new THREE.Mesh(new THREE.ConeGeometry(1.8,1.8,8),M(0xE8574A));tc.position.set(4.4,2.1,-5);scene.add(tc);
+  const bal=[[-3.2,4.4,2,0xF28B7D],[3.4,4.8,1,0xF2B632],[-2.2,5.4,-1,0x8EC5F0],[2.6,5.8,-2,0xC7A8F0]].map(b=>{const m=new THREE.Mesh(new THREE.SphereGeometry(.4,16,12),M(b[3]));m.position.set(b[0],b[1],b[2]);m.userData.y=b[1];scene.add(m);return m;});
+  function rs(){const w=stage.clientWidth;renderer.setSize(w,w*.92,false);}
+  addEventListener("resize",rs);rs();
+  let last=0;
+  (function loop(t){
+   requestAnimationFrame(loop);
+   fw.rotation.z=-t*.00018;cars.forEach(c=>c.rotation.z=-fw.rotation.z);
+   bal.forEach((b,i)=>b.position.y=b.userData.y+Math.sin(t*.001+i*2)*.25);
+   cam.position.set(Math.sin(t*.0004)*1.4,3.2,10.5);cam.lookAt(0,2.6,0);
+   wg.rotation.y=Math.sin(t*.0008)*.1;
+   ptr.rotation.z=Math.PI+(spinning?Math.sin(t*.05)*.25:0);
+   if(!spinning&&t-last>400){last=t;draw();}
+   renderer.render(scene,cam);
+  })(0);
+  cv.style.display="none";document.querySelector(".pin").style.display="none";
+ }catch(e){console.error(e);}
+}
+init3D();
+$("custom").value=DEFAULT;
+load(DEFAULT);renderShelf();updateStats();
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(draw);draw();
+</script>
+</body>
+</html>

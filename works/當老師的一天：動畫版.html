@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>當老師的一天：動畫版</title>
+<style>
+:root{--bg:#fff8e6;--card:#fff;--ink:#2b2a28;--sub:#6d6a63;--line:#ecdcb0;--acc:#d9730d;--accbg:#fdebd0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1c16;--card:#2b2720;--ink:#f0e9da;--sub:#a8a090;--line:#403a2d;--acc:#f0a050;--accbg:#3d3120}}
+:root[data-theme="dark"]{--bg:#1f1c16;--card:#2b2720;--ink:#f0e9da;--sub:#a8a090;--line:#403a2d;--acc:#f0a050;--accbg:#3d3120}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.7}
+main{max-width:560px;margin:0 auto;padding:16px 14px 36px}
+h1{font-size:20px;margin:0 0 8px}
+.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:10px}
+.prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .5s}
+.stage{position:relative;height:270px;border-radius:14px;overflow:hidden;border:1px solid var(--line);color:#333;cursor:pointer;user-select:none}
+.stage.shake{animation:shake .45s}
+.sky{position:absolute;inset:0}
+.deco{position:absolute;top:10px;right:14px;font-size:38px;opacity:.6}
+.floor{position:absolute;left:0;right:0;bottom:0;height:34px;background:rgba(0,0,0,.12)}
+.ch{position:absolute;bottom:12px;text-align:center;animation:inA .5s both;transition:opacity .3s,filter .3s}
+.ch .em{display:block;line-height:0}.ch .em svg{width:78px;height:140px;display:block}.ch:not([data-w=me]) .em svg{transform:scaleX(-1)}.tg svg{width:50px;height:90px;display:block}.board{display:none!important}.cut{position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;transition:opacity .25s;background:#000}.cut.show{opacity:1}.cut svg{width:100%;height:100%;display:block}.pop{z-index:4}.zk{position:absolute;right:-60px;width:46px;height:83px;animation:walkx 9s linear infinite}.zk svg,.zw svg{width:100%;height:100%;display:block;transform-origin:50% 100%;animation:shamble .7s ease-in-out infinite alternate}.zw{position:absolute;width:56px;height:100px;cursor:pointer}.ch.zs .em{animation:shamble .7s ease-in-out infinite alternate;transform-origin:50% 100%}@keyframes walkx{to{transform:translateX(-760px)}}@keyframes shamble{from{transform:rotate(-7deg) translateY(0)}to{transform:rotate(7deg) translateY(-6px)}}.rain{animation:rain .5s linear infinite}.fl{animation:flt 1.4s ease-in-out infinite alternate}@keyframes rain{to{transform:translateY(14px)}}@keyframes flt{to{transform:translateY(-14px)}}.mouth,.eyes{transform-box:fill-box;transform-origin:center}.eyes{animation:blink 4s infinite}.ch.talk .mouth{animation:mth .25s infinite alternate}.hud{display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-bottom:6px}@keyframes mth{from{transform:scaleY(.6)}to{transform:scaleY(2.6)}}@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.ch small{display:block;font-size:12px;font-weight:700}
+.ch.dim{opacity:.5;filter:grayscale(.5)}
+.ch.talk .em{animation:talk .3s infinite alternate}
+.pop{position:absolute;font-size:34px;animation:up 1.2s both;pointer-events:none}
+.title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.5);color:#fff;opacity:0;pointer-events:none;transition:opacity .4s;text-align:center}
+.title.show{opacity:1}
+.title b{font-size:34px}.title span{font-size:20px}
+.dlg{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-height:104px;cursor:pointer}
+.nm{color:var(--acc);font-weight:700;font-size:14px;min-height:22px}
+.tx{font-size:17px}
+.tx.nar{color:var(--sub);font-style:italic}
+.ctl{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+.hint{font-size:13px;color:var(--sub);margin:10px 0 0}
+.board{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#2e5d44;color:#f3f3e6;border:4px solid #8b5a2b;border-radius:6px;padding:2px 14px;font-size:14px;font-weight:700;white-space:nowrap;max-width:70%;overflow:hidden;z-index:1}.game{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:5;color:#fff}.gt{position:absolute;top:8px;left:0;right:0;text-align:center;font-weight:700;font-size:15px;text-shadow:0 1px 3px #000}.tg{position:absolute;font-size:44px;cursor:pointer;line-height:1;transition:left .2s,top .2s;touch-action:manipulation}.rb{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--acc);color:#fff;font-size:22px;font-weight:700;border-radius:30px;padding:12px 36px;border:0;touch-action:manipulation}.lane{position:absolute;left:4%;right:4%;height:3px;background:rgba(255,255,255,.6)}.start{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.65);color:#fff;font-size:18px;gap:6px;cursor:pointer}.start b{font-size:26px}
+@keyframes inA{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes talk{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@keyframes up{from{opacity:1;transform:translateY(0) scale(.8)}to{opacity:0;transform:translateY(-50px) scale(1.4)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<main>
+<h1>🎬 當老師的一天：動畫版</h1>
+<div class="hud"><span id="hl"></span><span id="hc"></span><span id="hs"></span></div><div class="prog"><i id="pg"></i></div>
+<div class="stage" id="stage"><div class="sky" id="sky"></div><div class="deco" id="deco"></div><div class="floor"></div><div id="chars"></div><div class="title" id="ttl"></div><div class="cut" id="cut"></div><div class="start" id="start"><b>🎬 當老師的一天</b>點一下開始播放<small>有音效，還有小遊戲要玩</small></div></div>
+<div class="dlg" id="dlg"><div class="nm" id="nm"></div><div class="tx" id="tx"></div></div>
+<div class="ctl"><button id="pp">⏸ 暫停</button><button id="sk">⏭ 下一幕</button><button id="rp">🔁 重播</button><button id="sd">🔊 音效開</button></div>
+<p class="hint">會自動播放，遇到小遊戲要用手點！點一下畫面可以跳到下一句。</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const G=(a,b)=>`linear-gradient(${a},${b})`;
+const m=G("#ffe3b3","#fff3d6"),d=G("#bfe3ff","#eaf7ff"),a=G("#ffd9b0","#ffeede"),e=G("#ff9e7a","#ffd2a8");
+const C={me:["🧑‍🏫","老師"],kai:["😎","阿凱"],mei:["👧","小美"],ming:["🤓","小明"],boss:["👨‍💼","主任"],mom:["👩","王媽媽"],col:["👩‍🏫","李老師"],black:["🪲","小黑"]};
+const S=[
+{t:"07:30",h:"鬧鐘罷工了",b:m,d:"🌅",home:1,c:[],l:[["nar","早上 7:30。鬧鐘安詳地躺在床底下。","💤"],["me","糟了！！！","💥",1],["nar","老師抓起包包衝出家門，兩隻襪子不同色。"]]},{t:"07:55",h:"衝進教室",b:m,d:"☀️",c:["mei"],l:[["nar","老師氣喘吁吁地衝進教室。"],["mei","老師！主任剛剛問你人在哪，我說你在路上了！"],["me","小美，妳是我的救星。","💖"]]},
+{g:"zombie",t:"08:10",h:"全班變殭屍",b:m,d:"☀️",c:["kai"],l:[["kai","老～師～我～要～吃～早～餐～","🧟"],["me","（伸直手臂）那我也要吃～"],["kai","哇！老師加入殭屍陣營了！","😂",1],["nar","隔壁班老師探頭進來，確認老師有沒有事。"]]},
+{t:"09:00",h:"投影機當機",b:d,d:"☀️",c:["ming"],l:[["nar","投影機一開，螢幕跳出老師昨晚的追劇畫面。","",0,"drama"],["ming","老師，這是你的私人頻道嗎？我可以訂閱嗎？","",0,"drama"],["me","這、這是教學參考資料！","💦",1],["ming","老師，第三集男主角真的會死嗎？","",0,"drama"],["me","不要劇透！！","💢"]]},
+{t:"10:30",h:"老師你談過戀愛嗎",b:d,d:"☀️",c:["ming","kai"],l:[["ming","老師，你有沒有被甩過？"],["kai","對啊對啊～說嘛說嘛！"],["me","老師……曾經被一隻貓甩過。","😿"],["kai","哈哈哈哈哈哈！","😂",1]]},
+{t:"11:00",h:"腦筋急轉彎擂台",b:d,d:"☀️",c:["kai"],l:[["kai","什麼東西越洗越髒？答不出來我就不寫作業！"],["me","……是水。"],["kai","答對了！！","🎉"],["nar","老師被戴上一頂紙皇冠，封為腦筋急轉彎之王。","👑"]]},
+{t:"12:00",h:"神祕料理午餐",b:d,d:"🍱",c:["col"],l:[["col","老師，今天的菜……你確定要吃嗎？","",0,"lunch"],["me","我是老師，我不怕。（大口吃）"],["me","咦？意外地好吃？","❓"],["nar","老師開始懷疑自己的味覺是不是壞掉了。"]]},
+{t:"12:40",h:"愛心便當",b:d,d:"🍱",c:["mei"],l:[["mei","老師，這是我媽煮的！她說謝謝你！"],["nar","打開便當盒，裡面全是香菜。老師最討厭的香菜。","🌿",0,"herb"],["me","（含淚吃光）好、好吃……","😭"],["mei","老師感動到哭了耶！","💖"]]},
+{t:"13:30",h:"午休惡作劇",b:a,d:"🌤️",c:["kai"],l:[["nar","午休時間。老師的椅背被貼了一張紙條。"],["kai","（偷笑）我什麼都沒做喔，真的！","🤫"],["me","謝謝，我收到了。（貼回去）"],["nar","全班爆笑，紙條後來被裱框掛在教室後面。","",0,"note"],["nar","全班笑到拍桌子，這張紙條成了傳家之寶。","🖼️",1]]},
+{g:"bug",t:"14:30",h:"不明生物現身",b:a,d:"🌤️",c:["black"],l:[["nar","一隻疑似蟑螂的生物從講桌下爬出來。全班尖叫！","😱",1],["me","大家冷靜！它是新同學！"],["black","……（觸角輕輕晃動）"],["me","小黑！不要飛過來！！","😱",1]]},
+{g:"run",t:"14:50",h:"體育課大對決",b:a,d:"🌤️",c:["kai"],l:[["kai","老師跑不贏我們啦！不信來比！"],["me","比就比！","🔥"],["nar","兩人站上起跑線。三、二、一——","🏁"]]},
+{t:"15:00",h:"家長把你當客服",b:a,d:"📞",c:["mom"],l:[["mom","老師，我家孩子不愛吃青菜，麻煩你幫忙盯一下，順便叫他早點睡喔。"],["me","我會盡力，但他睡覺我管不到……","💦"],["mom","也是，老師沒那麼神。哈哈！","😄"]]},
+{t:"16:30",h:"主任的健康操",b:e,d:"🌇",c:["boss"],l:[["boss","為了凝聚向心力，全體老師每天一起跳十分鐘健康操！","📢"],["me","（舉手）我有意見……"],["boss","很好，你負責帶操。","💪"],["nar","老師成為了老師界的健身教練。","🤸",1]]},
+{g:"excuse",t:"17:00",h:"藉口大全",b:e,d:"🌇",c:["ming","kai"],l:[["ming","老師，我的作業被外星人帶走了。","",0,"ufo"],["ming","而且他們還說，要給我 A+！","👽"],["kai","我的被狗吃掉了。","🐶"],["me","好，請外星人和狗都還給我。"],["nar","隔天，兩人附上「歸還證明」交了作業。","📄"]]},
+{t:"18:00",h:"終於放學",b:e,d:"🌙",c:["kai"],l:[["nar","終於放學了。老師走出校門。"],["kai","老師！我家的狗吃了你的作業！","🐶"],["me","我哪有給你作業啊！！","💢",1],["kai","老師明天見！","👋"],["nar","這是荒唐又可愛的一天。","✨"]]}
+];
+let si=0,li=0,playing=true,typing=false,over=false,full="",tA,tT,typer,gI,gJ,gm=false,started=false,extra=[],gdone=false,W=[],curW='nar',ac=null,snd=true,lives=3,score=0,combo=0;
+function hud(){$('hl').textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives);$('hs').textContent='⭐ '+score;$('hc').textContent='第 '+(si+1)+'/'+S.length+' 關'+(combo>1?'　🔥x'+combo:'');}
+function spark(el){const r=el.getBoundingClientRect(),b=$('stage').getBoundingClientRect();for(let i=0;i<6;i++){const p=document.createElement('span');p.className='pop';p.textContent=['✨','⭐','💥'][i%3];p.style.left=(r.left-b.left+Math.random()*30)+'px';p.style.top=(r.top-b.top+Math.random()*30)+'px';p.style.fontSize='20px';$('stage').appendChild(p);setTimeout(()=>p.remove(),1000);}}
+const P={me:{s:'#ffdcc0',h:'#4b2e2b',st:'long',t:'#e8698c',a:'gl'},mei:{s:'#ffdcc0',h:'#2c1f17',st:'twin',t:'#2f4f9e',a:'bow'},kai:{s:'#f1c699',h:'#1b1b1b',st:'spike',t:'#f0a500',a:''},ming:{s:'#ffdcc0',h:'#3b2a1a',st:'short',t:'#3e9b6a',a:'gl'},boss:{s:'#efc59d',h:'#9a9a9a',st:'bald',t:'#3a3f4b',a:'tie'},mom:{s:'#ffdcc0',h:'#7a3b1e',st:'curly',t:'#8e5bb5',a:''},col:{s:'#ffdcc0',h:'#232323',st:'bun',t:'#2a9d8f',a:''}};
+function bug(){return `<svg viewBox='0 0 100 100'><g stroke='#3b2412' stroke-width='3' stroke-linecap='round' fill='none'><path d='M30 60l-18-8M30 70l-20 6M34 78l-14 14M70 60l18-8M70 70l20 6M66 78l14 14'/><path d='M42 24Q34 8 22 10M58 24Q66 8 78 10'/></g><ellipse cx='50' cy='62' rx='26' ry='32' fill='#7b4a1e'/><path d='M50 32V94' stroke='#4a2c10' stroke-width='2'/><circle cx='50' cy='28' r='13' fill='#5a3515'/><circle cx='44' cy='26' r='4' fill='#fff'/><circle cx='56' cy='26' r='4' fill='#fff'/><circle cx='45' cy='27' r='2' fill='#000'/><circle cx='57' cy='27' r='2' fill='#000'/></svg>`;}
+function avatar(k,z){
+ if(k==='black')return bug();
+ const p=P[k],H=p.h,sk=z?'#9ad37c':p.s;
+ const ey=z?`<path d='M33 49l10 10M43 49l-10 10M57 49l10 10M67 49l-10 10' stroke='#222' stroke-width='3' stroke-linecap='round'/>`:`<g class='eyes'><ellipse cx='38' cy='54' rx='3.4' ry='4.8' fill='#222'/><ellipse cx='62' cy='54' rx='3.4' ry='4.8' fill='#222'/><circle cx='39.2' cy='52.4' r='1.2' fill='#fff'/><circle cx='63.2' cy='52.4' r='1.2' fill='#fff'/></g>`;
+ const bk={long:`<path d='M19 52Q19 12 50 12Q81 12 81 52L84 104Q50 112 16 104Z' fill='${H}'/>`,twin:`<circle cx='15' cy='62' r='11' fill='${H}'/><circle cx='85' cy='62' r='11' fill='${H}'/>`,bun:`<circle cx='50' cy='10' r='10' fill='${H}'/>`,curly:`<circle cx='22' cy='40' r='14' fill='${H}'/><circle cx='78' cy='40' r='14' fill='${H}'/><circle cx='50' cy='20' r='18' fill='${H}'/><circle cx='26' cy='64' r='11' fill='${H}'/><circle cx='74' cy='64' r='11' fill='${H}'/>`}[p.st]||'';
+ const fr=p.st==='spike'?`<path d='M21 50L24 20L36 32L44 12L54 30L66 14L72 32L80 22L79 50Q62 36 50 36Q38 36 21 50Z' fill='${H}'/>`:p.st==='bald'?`<path d='M22 42Q18 52 22 60M78 42Q82 52 78 60' stroke='${H}' stroke-width='7' fill='none' stroke-linecap='round'/>`:`<path d='M20 50Q22 16 50 16Q78 16 80 50Q64 32 50 34Q36 32 20 50Z' fill='${H}'/>`;
+ return `<svg viewBox='0 0 100 140'>${bk}<rect x='44' y='76' width='12' height='12' fill='${sk}'/><rect x='22' y='84' width='56' height='52' rx='18' fill='${p.t}'/><rect x='10' y='88' width='13' height='38' rx='6.5' fill='${p.t}'/><rect x='77' y='88' width='13' height='38' rx='6.5' fill='${p.t}'/><circle cx='16' cy='128' r='6' fill='${sk}'/><circle cx='84' cy='128' r='6' fill='${sk}'/>${p.a==='tie'?`<path d='M50 88l-6 8 6 24 6-24z' fill='#c0392b'/>`:`<path d='M38 84L50 98L62 84Z' fill='#fff'/>`}<ellipse cx='50' cy='52' rx='29' ry='31' fill='${sk}'/>${fr}<circle cx='31' cy='64' r='5' fill='#ff8a8a' opacity='.45'/><circle cx='69' cy='64' r='5' fill='#ff8a8a' opacity='.45'/>${ey}<ellipse class='mouth' cx='50' cy='70' rx='6' ry='2.4' fill='#b03a2e'/>${p.a==='gl'?`<g fill='none' stroke='#333' stroke-width='2'><circle cx='38' cy='54' r='9'/><circle cx='62' cy='54' r='9'/><path d='M47 54h6'/></g>`:''}${p.a==='bow'?`<path d='M30 22l-13-7v15zM30 22l13-7v15z' fill='#e63946'/>`:''}</svg>`;
+}
+const Ls=()=>S[si].l.concat(extra);
+const V={me:220,kai:330,mei:420,ming:360,boss:150,mom:390,col:300,black:600,nar:200};
+function beep(f,du=.06,ty='square'){if(!snd||!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=ty;o.frequency.value=f;g.gain.value=.05;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+du);o.stop(ac.currentTime+du);}
+const GM={zombie:{t:'點擊殭屍學生，把他們救回來！',em:['kai','ming','mei'],av:1,need:6,sec:8,jump:900},bug:{t:'抓住小黑，別讓它飛走！',em:['black'],av:1,need:5,sec:8,jump:650},excuse:{t:'接住所有的藉口！',em:['👽','🐶','☄️'],need:7,sec:8,jump:800}};
+const OUT={
+zombie:[[['kai','呃……我剛才在幹嘛？','😵'],['me','歡迎回到人間。']],[['kai','嗚～～我還是殭屍～～','🧟'],['nar','老師決定不管了，直接開始上課。全班一邊呻吟一邊抄筆記。']]],
+bug:[[['me','搞定！小黑，你不是蟑螂，你是同學。','🛡️'],['nar','全班起立鼓掌。','👏']],[['black','（優雅地飛走了）'],['nar','小黑從此成為教室的傳說，每年都會出現一次。','📖']]],
+run:[[['kai','不、不可能！老師你贏了！','😱',1],['me','呼……老師還沒老。','💪']],[['kai','哈哈！老師輸了！','😂'],['me','我、我只是在熱身……','💦']]],
+excuse:[[['ming','老師，你連我的藉口都接住了……','✨'],['me','老師什麼藉口沒聽過。']],[['ming','老師，藉口太多，你接不完了。','😜'],['nar','老師決定明天再說。','🌙']]]};
+function finish(g,ok){clr();document.querySelectorAll('.game').forEach(x=>x.remove());gm=false;W.push({g,ok});if(ok){combo++;score+=100+combo*20;}else{combo=0;lives=Math.max(0,lives-1);}hud();extra=OUT[g][ok?0:1];beep(ok?880:200,.3,'triangle');pop(ok?'🏆':'💨','me');line();}
+function run(o){
+ o.innerHTML='<div class="gt">狂點「衝！」，贏過阿凱！</div><div class="lane" style="top:96px"></div><div class="lane" style="top:156px"></div><span class="tg" id="r1" style="left:4%;top:6px;cursor:default">'+avatar('me')+'</span><span class="tg" id="r2" style="left:4%;top:66px;cursor:default">'+avatar('kai')+'</span><button class="rb">衝！</button>';
+ let p=4,k=4;const upd=()=>{$('r1').style.left=p+'%';$('r2').style.left=k+'%';};
+ o.querySelector('.rb').onclick=ev=>{ev.stopPropagation();p+=3.5;beep(300+p*5,.04);upd();};
+ gI=setInterval(()=>{k+=1.35;upd();if(p>=84)finish('run',true);else if(k>=84)finish('run',false);},100);
+}
+function game(g){
+ gm=true;const o=document.createElement('div');o.className='game';o.addEventListener('click',ev=>ev.stopPropagation());$('stage').appendChild(o);
+ if(g==='run'){run(o);return;}if(g==='zombie'){zgame(o);return;}
+ const cf=GM[g];let hit=0,left=cf.sec;
+ o.innerHTML='<div class="gt" id="gt"></div><span class="tg" id="tg"></span>';
+ const upd=()=>{$('gt').textContent=cf.t+'　'+hit+'/'+cf.need+'　⏱'+left;};
+ const tg=$('tg');
+ const mv=()=>{const v=cf.em[Math.random()*cf.em.length|0];tg.innerHTML=cf.av?avatar(v,g==='zombie'):`<span style='font-size:44px;line-height:1'>${v}</span>`;tg.style.left=(8+Math.random()*78)+'%';tg.style.top=(40+Math.random()*110)+'px';};
+ tg.onclick=ev=>{ev.stopPropagation();hit++;score+=5;hud();spark(tg);beep(600+hit*70,.08);upd();if(hit>=cf.need)finish(g,true);else mv();};
+ upd();mv();gJ=setInterval(mv,cf.jump);
+ gI=setInterval(()=>{left--;upd();if(left<=0)finish(g,false);},1000);
+}
+function clr(){clearTimeout(tA);clearTimeout(tT);clearInterval(typer);clearInterval(gI);clearInterval(gJ);}
+function chars(s){
+ let h=`<div class="ch" data-w="me" style="left:6%"><span class="em">${(PJ=!!s.home,avatar('me'))}</span><small>老師</small></div>`;
+ s.c.forEach((k,n)=>{h+=`<div class="ch${s.g==='zombie'?' zs':''}" data-w="${k}" style="right:${n?32:6}%"><span class="em">${avatar(k,s.g==='zombie')}</span><small>${C[k][1]}</small></div>`;});
+ if(s.g==='zombie')h=[['ming',0,56],['mei',-3,86],['kai',-6,40]].map(w=>`<div class="zk" style="animation-delay:${w[1]}s;bottom:${w[2]}px">${avatar(w[0],1)}</div>`).join('')+h;$("chars").innerHTML=h;
+}
+function scene(n){
+ clr();document.querySelectorAll('.game').forEach(x=>x.remove());gm=false;extra=[];gdone=false;si=n;li=0;typing=false;const s=S[n];if(n)score+=10;hud();$('cut').classList.remove('show');
+ $("pg").style.width=(n/S.length*100)+"%";
+ $("sky").style.background=s.b;$("deco").textContent=s.d;$("sky").innerHTML=s.home?bedroom(s.h):room(s.h);chars(s);
+ $("nm").textContent="";$("tx").textContent="";$("tx").className="tx";
+ $("ttl").innerHTML=`<b>${s.t}</b><span>${s.h}</span>`;$("ttl").classList.add("show");beep(523,.15,'triangle');
+ tT=setTimeout(line,1700);
+}
+function pop(em,w){
+ const c=document.querySelector(`.ch[data-w="${w}"]`),p=document.createElement("span");
+ p.className="pop";p.textContent=em;p.style.top="30px";
+ p.style.left=c?(c.offsetLeft+24)+"px":"45%";
+ $("stage").appendChild(p);setTimeout(()=>p.remove(),1300);
+}
+function fin(){
+ clearInterval(typer);$("tx").textContent=full;typing=false;
+ document.querySelectorAll(".ch").forEach(c=>c.classList.remove("talk"));
+ clearTimeout(tA);if(playing)tA=setTimeout(adv,1400+full.length*30);
+}
+function line(){
+ $("ttl").classList.remove("show");
+ const L=Ls()[li++],w=L[0];
+ $("nm").textContent=w==="nar"?"旁白":C[w][1];
+ $("tx").className="tx"+(w==="nar"?" nar":"");
+ document.querySelectorAll(".ch").forEach(c=>{c.classList.toggle("dim",w!=="nar"&&c.dataset.w!==w);c.classList.toggle("talk",c.dataset.w===w);});
+ curW=w;if(L[2]){pop(L[2],w);beep(880,.12,'triangle');}const ck=L[4];if(ck){$('cut').innerHTML=CS[ck]();$('cut').classList.add('show');}else $('cut').classList.remove('show');
+ if(L[3]){beep(110,.25,'sawtooth');$("stage").classList.remove("shake");void $("stage").offsetWidth;$("stage").classList.add("shake");}
+ full=L[1];let k=0;typing=true;clearInterval(typer);
+ typer=setInterval(()=>{k++;$("tx").textContent=full.slice(0,k);if(k%2===0)beep((V[curW]||250)+Math.random()*40,.04);if(k>=full.length)fin();},45);
+}
+function adv(){
+ clr();typing=false;
+ if(li>=Ls().length){if(S[si].g&&!gdone){gdone=true;game(S[si].g);}else if(si+1>=S.length)end();else scene(si+1);}else line();
+}
+function end(){
+ clr();over=true;$("pg").style.width="100%";$("chars").innerHTML="";
+ const wn=W.filter(x=>x.ok).length;$("ttl").innerHTML='<b>🎬 劇終</b><span>'+(wn>=4?'🏆 傳說老師':wn>=2?'🌟 稱職老師':'🥔 被玩壞的老師')+'</span>';$("ttl").classList.add("show");
+ $("nm").textContent="演出名單";$("tx").className="tx";
+ $("tx").textContent='總分 '+score+'　小遊戲戰績：'+W.map(x=>x.ok?'✅':'❌').join(' ')+'　演出：'+Object.values(C).map(c=>c[1]).join('、');
+}
+$("stage").onclick=$("dlg").onclick=()=>{if(over||gm||!started)return;if(typing)fin();else adv();};
+$("pp").onclick=()=>{
+ playing=!playing;$("pp").textContent=playing?"⏸ 暫停":"▶ 播放";
+ clearTimeout(tA);if(playing&&!typing&&!over)tA=setTimeout(adv,600);
+};
+$("sk").onclick=()=>{if(over||!started)return;clr();if(si+1>=S.length)end();else scene(si+1);};
+$("rp").onclick=()=>{if(!started)return;W=[];score=0;combo=0;lives=3;over=false;playing=true;$("pp").textContent="⏸ 暫停";scene(0);};
+const Q={me:{sk:'#ffe3cf',h1:'#6b4331',h2:'#a8714f',st:'long',g:'f',top:'#f4b6c8',bot:'#5b4a6b',a:'gl'},mei:{sk:'#ffe3cf',h1:'#2b2420',h2:'#5a4636',st:'twin',g:'f',top:'#34456f',bot:'#2c3a5e',a:'bow'},kai:{sk:'#f6d3b0',h1:'#1d1a1f',h2:'#4a4150',st:'comma',g:'m',top:'#3a4a6b',bot:'#2b3552',a:''},ming:{sk:'#ffe3cf',h1:'#33261c',h2:'#5c4433',st:'bowl',g:'m',top:'#4a8c6f',bot:'#33415c',a:'gl'},boss:{sk:'#f1cfae',h1:'#9a9aa3',h2:'#c9c9d1',st:'bald',g:'m',top:'#3a3f4b',bot:'#2c303a',a:''},mom:{sk:'#ffe3cf',h1:'#8a5a3c',h2:'#c58f66',st:'perm',g:'f',top:'#b79be0',bot:'#6a5a8a',a:''},col:{sk:'#ffe3cf',h1:'#26211f',h2:'#4d423c',st:'bun',g:'f',top:'#8fd3c4',bot:'#455a64',a:''}};
+function avatar(k,z){
+ if(k==='black')return bug();
+ const q=(PJ&&k==='me')?{...Q.me,top:'#cfe3ff',bot:'#cfe3ff'}:Q[k],sk=z?'#a8d98c':q.sk,id='h'+k+(z?'z':'')+(PJ&&k==='me'?'p':''),hf='url(#'+id+')',f=q.g==='f',H=q.h2;
+ const eyes=z?`<path d='M34 50l10 10M44 50l-10 10M56 50l10 10M66 50l-10 10' stroke='#222' stroke-width='3' stroke-linecap='round'/>`:`<g class='eyes'><ellipse cx='39' cy='57' rx='4.4' ry='6' fill='#2a2230'/><ellipse cx='61' cy='57' rx='4.4' ry='6' fill='#2a2230'/><ellipse cx='40.4' cy='54.6' rx='1.7' ry='2' fill='#fff'/><ellipse cx='62.4' cy='54.6' rx='1.7' ry='2' fill='#fff'/><circle cx='37.6' cy='59.4' r='.9' fill='#fff'/><circle cx='59.6' cy='59.4' r='.9' fill='#fff'/><path d='M33 52Q39 48.5 45 52M55 52Q61 48.5 67 52' stroke='#2a2230' stroke-width='1.6' fill='none'/></g>`;
+ const bk={long:`<path d='M22 52Q18 14 50 14Q82 14 78 52Q84 100 72 120Q62 108 64 96H36Q38 108 28 120Q16 100 22 52Z' fill='${hf}'/>`,twin:`<path d='M24 56Q8 84 16 118Q30 104 31 72ZM76 56Q92 84 84 118Q70 104 69 72Z' fill='${hf}'/>`,bun:`<circle cx='50' cy='12' r='9' fill='${hf}'/>`,perm:`<path d='M22 50Q4 92 24 118Q36 104 30 78ZM78 50Q96 92 76 118Q64 104 70 78Z' fill='${hf}'/><circle cx='50' cy='20' r='26' fill='${hf}'/>`}[q.st]||'';
+ const fr={long:`<path d='M24 52Q22 16 50 16Q78 16 76 52Q72 34 56 30Q46 40 30 48Z' fill='${hf}'/>`,comma:`<path d='M24 54Q20 14 50 14Q80 14 76 54Q74 36 62 34Q56 46 48 36Q38 44 36 34Q26 38 24 54Z' fill='${hf}'/>`,bowl:`<path d='M24 56Q20 12 50 12Q80 12 76 56Q72 30 50 30Q28 30 24 56Z' fill='${hf}'/>`,bald:`<path d='M25 48Q22 62 27 68M75 48Q78 62 73 68' stroke='${q.h1}' stroke-width='6' fill='none' stroke-linecap='round'/>`}[q.st]||`<path d='M24 52Q26 16 50 16Q74 16 76 52Q64 34 50 36Q36 34 24 52Z' fill='${hf}'/>`;
+ const arms=z?`<path d='M26 98L4 106L8 114L32 108ZM74 98L96 106L92 114L68 108Z' fill='${q.top}'/><circle cx='6' cy='110' r='6' fill='${sk}'/><circle cx='94' cy='110' r='6' fill='${sk}'/>`:`<path d='M26 98L14 140L24 144L34 108ZM74 98L86 140L76 144L66 108Z' fill='${q.top}'/><circle cx='19' cy='146' r='6' fill='${sk}'/><circle cx='81' cy='146' r='6' fill='${sk}'/>`;
+ const low=f?`<rect x='36' y='164' width='8' height='12' fill='${sk}'/><rect x='56' y='164' width='8' height='12' fill='${sk}'/><path d='M24 138H76L84 166H16Z' fill='${q.bot}'/><path d='M32 176h14v4H32zM54 176h14v4H54z' fill='#333'/>`:`<path d='M28 138H72L70 176H54L50 152L46 176H30Z' fill='${q.bot}'/><path d='M28 176h18v4H28zM54 176h18v4H54z' fill='#333'/>`;
+ const tie=f?`<path d='M50 110l-8-5v10zM50 110l8-5v10z' fill='#e63946'/><circle cx='50' cy='110' r='2.6' fill='#c0392b'/>`:`<path d='M50 106l-4 6 4 18 4-18z' fill='#c0392b'/>`;
+ const side=(q.st==='long'||q.st==='twin'||q.st==='perm')?`<path d='M25 56Q20 92 30 114Q39 100 35 72ZM75 56Q80 92 70 114Q61 100 65 72Z' fill='${hf}'/>`:'';
+ const acc=q.a==='gl'?`<g fill='none' stroke='#b8860b' stroke-width='1.6'><circle cx='39' cy='57' r='8.6'/><circle cx='61' cy='57' r='8.6'/><path d='M47.6 56h4.8'/></g>`:q.a==='bow'?`<path d='M27 36l-10-6v13zM27 36l10-6v13z' fill='#ff7aa2'/>`:'';
+ return `<svg viewBox='0 0 100 180'><defs><linearGradient id='${id}' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${q.h1}'/><stop offset='1' stop-color='${H}'/></linearGradient></defs>${bk}<rect x='45' y='80' width='10' height='16' fill='${sk}'/><path d='M26 102Q26 92 38 92H62Q74 92 74 102L76 142H24Z' fill='${q.top}'/><path d='M40 92L50 114L60 92Z' fill='#fff'/>${tie}${arms}${low}${side}<path d='M26 50Q26 20 50 20Q74 20 74 50Q74 72 50 86Q26 72 26 50Z' fill='${sk}'/>${fr}<circle cx='32' cy='68' r='4.5' fill='#ff9aa8' opacity='.4'/><circle cx='68' cy='68' r='4.5' fill='#ff9aa8' opacity='.4'/><path d='M34 46Q39 44 44 46M56 46Q61 44 66 46' stroke='${H}' stroke-width='1.3' fill='none'/>${eyes}<path d='M50 63v3' stroke='#d9a283' stroke-width='1.2'/><ellipse class='mouth' cx='50' cy='73' rx='3.6' ry='1.5' fill='#e0707a'/>${acc}</svg>`;
+}
+const room=h=>`<svg viewBox='0 0 400 200' preserveAspectRatio='xMidYMax slice' style='width:100%;height:100%'><rect x='18' y='26' width='84' height='86' rx='4' fill='rgba(255,255,255,.55)' stroke='#fff' stroke-width='5'/><path d='M60 26v86M18 69h84' stroke='#fff' stroke-width='3'/><path d='M8 20Q30 60 12 120H2V20ZM112 20Q92 60 108 120H118V20Z' fill='#ffc2d4' opacity='.8'/><rect x='140' y='22' width='230' height='80' rx='4' fill='#2e5d44' stroke='#a0703a' stroke-width='6'/><text x='255' y='70' text-anchor='middle' fill='#eef5ec' font-size='17' font-family='sans-serif' font-weight='700'>${h}</text><path d='M150 94h60' stroke='#eef5ec' opacity='.6' stroke-width='3' stroke-linecap='round'/><rect x='14' y='150' width='72' height='6' fill='#c89b6a'/><rect x='24' y='156' width='4' height='24' fill='#a0703a'/><rect x='72' y='156' width='4' height='24' fill='#a0703a'/><rect x='314' y='150' width='72' height='6' fill='#c89b6a'/><rect x='324' y='156' width='4' height='24' fill='#a0703a'/><rect x='372' y='156' width='4' height='24' fill='#a0703a'/></svg>`;
+const rain=()=>Array.from({length:36},(_,i)=>`M${(i*11+(i%4)*3)%400} ${(i*29)%170}l-5 14`).join('');
+const T=`font-family='sans-serif' text-anchor='middle'`;
+const CS={
+drama:()=>`<svg viewBox='0 0 400 200' preserveAspectRatio='xMidYMid slice'><defs><linearGradient id='dg' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#3b1d4f'/><stop offset='1' stop-color='#f08aa0'/></linearGradient></defs><rect width='400' height='200' fill='url(#dg)'/><g fill='#2a1638' opacity='.85'><rect x='0' y='70' width='60' height='130'/><rect x='70' y='40' width='50' height='160'/><rect x='300' y='60' width='55' height='140'/><rect x='360' y='90' width='40' height='110'/></g><g fill='#ffe9a8'><rect x='80' y='60' width='6' height='8'/><rect x='95' y='80' width='6' height='8'/><rect x='312' y='80' width='6' height='8'/><rect x='326' y='100' width='6' height='8'/></g>${avatar('kai').replace('<svg ',`<svg x='140' y='64' width='72' height='130' `)}${avatar('mei').replace('<svg ',`<svg x='192' y='64' width='72' height='130' `)}<path d='M120 50Q202 -14 284 50Z' fill='#ff7aa2'/><path d='M202 50v38' stroke='#5a3b4a' stroke-width='3'/><g class='rain' stroke='#d8ecff' opacity='.55' stroke-width='1.4'><path d='${rain()}'/></g><text x='198' y='42' font-size='20' ${T}>💕</text><rect y='168' width='400' height='32' fill='rgba(0,0,0,.65)'/><text x='200' y='189' fill='#fff' font-size='14' ${T}>「這一次，我不會再放手。」</text><text x='10' y='20' fill='#fff' font-size='12' font-family='sans-serif'>▶ 第3集　追劇中</text><text x='390' y='20' fill='#fff' font-size='12' text-anchor='end' font-family='sans-serif'>HD</text></svg>`,
+lunch:()=>`<svg viewBox='0 0 400 200' preserveAspectRatio='xMidYMid slice'><rect width='400' height='200' fill='#f4ead2'/><rect y='150' width='400' height='50' fill='#d9c7a0'/><text x='200' y='28' font-size='18' font-weight='700' fill='#8a5a2b' ${T}>今日營養午餐</text><rect x='80' y='44' width='240' height='120' rx='16' fill='#c3c9d3' stroke='#8e97a6' stroke-width='3'/><rect x='92' y='56' width='96' height='46' rx='10' fill='#e6eaf0'/><circle cx='250' cy='80' r='30' fill='#e6eaf0'/><rect x='92' y='110' width='216' height='42' rx='10' fill='#e6eaf0'/><circle cx='140' cy='80' r='16' fill='#fff'/><path d='M120 132Q140 112 170 126Q200 112 230 128Q260 116 286 134Q270 148 200 146Q140 148 120 132Z' fill='#6fae57'/><circle cx='178' cy='128' r='6' fill='#fff'/><circle cx='214' cy='130' r='6' fill='#fff'/><circle cx='180' cy='129' r='2.6' fill='#222'/><circle cx='212' cy='131' r='2.6' fill='#222'/><g class='fl' stroke='#9aa' fill='none' stroke-width='3' opacity='.6'><path d='M150 106q-8-12 0-22M200 104q-8-12 0-22'/></g><text x='250' y='90' font-size='28' ${T}>？</text><text x='200' y='188' font-size='15' fill='#6a4a2a' ${T}>疑似青菜的物體，正在看著你</text></svg>`,
+herb:()=>`<svg viewBox='0 0 400 200' preserveAspectRatio='xMidYMid slice'><rect width='400' height='200' fill='#fff3e0'/><rect x='110' y='40' width='180' height='110' rx='18' fill='#e8a65d' stroke='#b9772f' stroke-width='4'/><ellipse cx='200' cy='96' rx='80' ry='46' fill='#fffdf5'/>${Array.from({length:40},(_,i)=>{const x=150+((i*53)%100),y=74+((i*37)%52);return `<ellipse cx='${x}' cy='${y}' rx='9' ry='5' fill='${i%2?'#3f9b4a':'#58b45f'}' transform='rotate(${(i*47)%180} ${x} ${y})'/>`}).join('')}<text x='200' y='28' font-size='17' font-weight='700' fill='#9a5a1f' ${T}>媽媽的愛心便當</text><text x='200' y='176' font-size='16' fill='#2f7a3a' ${T}>全部都是香菜 🌿</text></svg>`,
+note:()=>`<svg viewBox='0 0 400 200' preserveAspectRatio='xMidYMid slice'><rect width='400' height='200' fill='#f3dfe4'/><rect x='110' y='22' width='180' height='140' fill='#c8963e' stroke='#8a6420' stroke-width='6'/><rect x='124' y='36' width='152' height='112' fill='#fffdf2'/><rect x='140' y='56' width='120' height='64' fill='#fff9b0' transform='rotate(-4 200 88)'/><text x='200' y='94' font-size='16' fill='#444' transform='rotate(-4 200 88)' ${T}>謝謝，我收到了</text><text x='200' y='138' font-size='20' ${T}>💗</text><rect x='160' y='168' width='80' height='20' fill='#8a6420'/><text x='200' y='182' font-size='11' fill='#fff' ${T}>傳家之寶</text></svg>`,
+ufo:()=>`<svg viewBox='0 0 400 200' preserveAspectRatio='xMidYMid slice'><rect width='400' height='200' fill='#10163a'/>${Array.from({length:30},(_,i)=>`<circle cx='${(i*97)%400}' cy='${(i*53)%120}' r='${1+i%2}' fill='#fff'/>`).join('')}<path d='M170 80L120 200H280L230 80Z' fill='#fff7a8' opacity='.3'/><ellipse cx='200' cy='62' rx='70' ry='16' fill='#b8c0d8'/><path d='M165 58Q200 14 235 58Z' fill='#8fd3ff' opacity='.85'/><circle cx='200' cy='40' r='9' fill='#7fd35a'/><circle cx='196' cy='38' r='2' fill='#000'/><circle cx='204' cy='38' r='2' fill='#000'/><g class='fl'><rect x='178' y='112' width='44' height='56' rx='3' fill='#fff' transform='rotate(-8 200 140)'/><path d='M186 126h28M186 136h22M186 146h26' stroke='#999' stroke-width='2' transform='rotate(-8 200 140)'/><text x='204' y='160' font-size='14' font-weight='700' fill='#d33' transform='rotate(-8 200 140)' ${T}>A+</text></g><text x='200' y='192' font-size='14' fill='#cfd6ff' ${T}>作業被外星人帶走了</text></svg>`};
+function zgame(o){
+ const need=6;let hit=0,left=10;
+ o.innerHTML=`<div class='gt' id='gt'></div>`;
+ const upd=()=>{$('gt').textContent='點擊殭屍學生，把他們救回來！　'+hit+'/'+need+'　⏱'+left;};
+ const spawn=()=>{
+  const z=document.createElement('div');z.className='zw';
+  const v=['kai','ming','mei'][Math.random()*3|0];
+  z.innerHTML=avatar(v,1);
+  const y=30+Math.random()*90,dur=4000+Math.random()*2500;
+  z.style.top=y+'px';z.style.left='100%';z.style.transition='left '+dur+'ms linear';
+  o.appendChild(z);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{z.style.left='-70px';}));
+  z.onclick=ev=>{ev.stopPropagation();if(z.dead)return;z.dead=1;hit++;score+=5;hud();spark(z);beep(600+hit*70,.08);
+   const cl=getComputedStyle(z).left;z.style.transition='none';z.style.left=cl;void z.offsetWidth;
+   z.innerHTML=avatar(v);z.style.transition='top .5s,opacity .5s';z.style.top=(y-40)+'px';z.style.opacity='0';
+   upd();if(hit>=need)finish('zombie',true);else setTimeout(()=>z.remove(),600);};
+  setTimeout(()=>z.remove(),dur+200);
+ };
+ upd();spawn();gJ=setInterval(spawn,900);
+ gI=setInterval(()=>{left--;upd();if(left<=0)finish('zombie',false);},1000);
+}
+var PJ=false;
+const bedroom=h=>`<svg viewBox='0 0 400 200' preserveAspectRatio='xMidYMax slice' style='width:100%;height:100%'><rect y='150' width='400' height='50' fill='#d9b48a'/><rect x='24' y='24' width='80' height='80' rx='4' fill='#ffe9a8' stroke='#fff' stroke-width='5'/><circle cx='64' cy='64' r='16' fill='#ffd166'/><path d='M64 24v80M24 64h80' stroke='#fff' stroke-width='3'/><path d='M14 18Q36 60 18 112H6V18ZM114 18Q92 60 110 112H122V18Z' fill='#ffc2d4' opacity='.85'/><rect x='150' y='16' width='160' height='28' rx='6' fill='#fff' opacity='.85'/><text x='230' y='36' text-anchor='middle' font-size='15' font-weight='700' fill='#8a5a2b' font-family='sans-serif'>🏠 ${h}</text><circle cx='190' cy='78' r='18' fill='#fff' stroke='#8a5a2b' stroke-width='3'/><path d='M190 78V92M190 78L182 86' stroke='#333' stroke-width='2' stroke-linecap='round'/><rect x='240' y='96' width='150' height='70' rx='10' fill='#a07a50'/><rect x='246' y='84' width='138' height='56' rx='12' fill='#fff'/><rect x='252' y='76' width='46' height='28' rx='10' fill='#ffe3ec'/><path d='M246 112H384V150Q384 158 376 158H254Q246 158 246 150Z' fill='#ff9fb8'/><circle cx='196' cy='168' r='12' fill='#ef476f' stroke='#8a2a3f' stroke-width='3'/><circle cx='196' cy='168' r='8' fill='#fff'/><path d='M196 168V162M196 168L200 170' stroke='#333' stroke-width='1.6'/><path d='M186 158l-4-4M206 158l4-4' stroke='#8a2a3f' stroke-width='2'/></svg>`;
+$("sd").onclick=()=>{snd=!snd;$("sd").textContent=snd?'🔊 音效開':'🔇 音效關';};
+$("start").onclick=()=>{ac=new(window.AudioContext||window.webkitAudioContext)();started=true;$("start").remove();scene(0);};
+</script>
+</body>
+</html>
